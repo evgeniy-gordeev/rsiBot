@@ -7,7 +7,7 @@ import json
 
 from pnl import calculate_24h_pnl
 from rsi import calculate_rsi
-from utils import read_config, write_config
+from utils import read_config, write_config, create_main_menu_markup
 
 #параметры API(подключения к KuCoin)
 api_key = '671647ad5913dd0001518e91'
@@ -41,36 +41,14 @@ time_sleep = 5
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    markup = types.InlineKeyboardMarkup()
-    itembtn_str1 = types.InlineKeyboardButton('Запуск🚀🚀🚀', callback_data='start')
-    itembtn_str2 = types.InlineKeyboardButton('STOP❌❌❌', callback_data='stop')
-    itembtn_str3 = types.InlineKeyboardButton('отобразить настройки', callback_data='settings')
-    itembtn_str4 = types.InlineKeyboardButton('изменить настройки', callback_data='set')
-    itembtn_str5 = types.InlineKeyboardButton('отобразить позицию', callback_data='pos')
-    itembtn_str6 = types.InlineKeyboardButton('calculate_24h_pnl', callback_data='24h_pnl')
-    markup.add(itembtn_str1, itembtn_str2)
-    markup.add(itembtn_str3)
-    markup.add(itembtn_str4)
-    markup.add(itembtn_str5)
-    markup.add(itembtn_str6)
-    response =  f"ГЛАВНОЕ МЕНЮ" 
+    markup = create_main_menu_markup()
+    response = "ГЛАВНОЕ МЕНЮ"
     bot.send_message(message.chat.id, text=response, reply_markup=markup)
 
 @bot.callback_query_handler(lambda query: query.data == "menu")
-def handle_start(query):
-    markup = types.InlineKeyboardMarkup()
-    itembtn_str1 = types.InlineKeyboardButton('Запуск🚀🚀🚀', callback_data='start')
-    itembtn_str2 = types.InlineKeyboardButton('STOP❌❌❌', callback_data='stop')
-    itembtn_str3 = types.InlineKeyboardButton('отобразить настройки', callback_data='settings')
-    itembtn_str4 = types.InlineKeyboardButton('изменить настройки', callback_data='set')
-    itembtn_str5 = types.InlineKeyboardButton('отобразить позицию', callback_data='pos')
-    itembtn_str6 = types.InlineKeyboardButton('calculate_24h_pnl', callback_data='24h_pnl')
-    markup.add(itembtn_str1, itembtn_str2)
-    markup.add(itembtn_str3)
-    markup.add(itembtn_str4)
-    markup.add(itembtn_str5)
-    markup.add(itembtn_str6)
-    response =  f"ГЛАВНОЕ МЕНЮ" 
+def handle_menu(query):
+    markup = create_main_menu_markup()
+    response = "ГЛАВНОЕ МЕНЮ"
     bot.edit_message_text(chat_id=query.from_user.id, text=response, message_id=query.message.id, reply_markup=markup)
 
 
