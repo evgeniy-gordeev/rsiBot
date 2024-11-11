@@ -1,0 +1,11 @@
+{
+    "coin": "TONUSDTM",
+    "leverage": "1",
+    "size": 52,
+    "up_border": 70,
+    "short_close_border": 55,
+    "low_border": 29,
+    "long_stop_border": 45,
+    "tf": 1,
+    "n_periods": 6
+}
