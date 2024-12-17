@@ -40,35 +40,3 @@ def create_main_menu_markup():
     markup.add(itembtn_str5)
     markup.add(itembtn_str6)
     return markup
-
-
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-import time
-
-def get_tradingview_chart(symbol):
-    # Настройка Chrome для работы в headless-режиме (без открытия окна)
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    
-    # Запуск драйвера Chrome
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    
-    # Загрузка страницы TradingView с графиком
-    url = f'https://www.tradingview.com/chart/?symbol={symbol}'
-    driver.get(url)
-    
-    # Задержка для загрузки страницы
-    time.sleep(5)
-    
-    # Создание скриншота
-    screenshot_path = f'{symbol}_chart.png'
-    driver.save_screenshot(screenshot_path)
-    
-    # Закрытие браузера
-    driver.quit()
-    
-    return screenshot_path

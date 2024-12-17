@@ -5,35 +5,33 @@ import time
 import json
 
 
-from pnl import calculate_24h_pnl
+from kucoin import start_trading_process, stop_trading_process, current_position, calculate_24h_pnl
 from rsi import calculate_rsi
 from utils import read_config, write_config, create_main_menu_markup
 
-#параметры API(подключения к KuCoin)
+#параметры API(подключения к KuCoin) !!!
 api_key = '671647ad5913dd0001518e91'
 api_secret = '0c48f805-39ec-49db-b97a-ea3a6595789b'  
 api_passphrase = 'VL.45E29ZqN4czL'
-print(api_key)
+
+#bot KEY
+bot_key = "7473391752:AAGAs30m3u_opiNbzJVvE-OhOGYRBmRm4Zg"
 
 #клиент KuCoin
 client = Trade(key=api_key, secret=api_secret, passphrase=api_passphrase)
-print(client)
-bot = telebot.TeleBot(token="7473391752:AAGAs30m3u_opiNbzJVvE-OhOGYRBmRm4Zg")
+bot = telebot.TeleBot(token=bot_key)
 
 #параметры расчета RSI
 CONFIG_FILE = "config.json"
 with open('config.json', 'r') as file:
     config_data = json.load(file)
-
 coin = config_data.get("coin")
 leverage = config_data.get("leverage")
 size = config_data.get("size")
-
 up_border = config_data.get("up_border")
 short_close_border = config_data.get("short_close_border")
 low_border = config_data.get("low_border")
 long_stop_border = config_data.get("long_stop_border")
-
 is_running = False
 time_sleep = 5
 
@@ -53,186 +51,26 @@ def handle_menu(query):
 
 
 
-
+# Обработчик нажатия кнопки "Запуск🚀🚀🚀"
 @bot.message_handler(func=lambda message: message.text == "Запуск🚀🚀🚀")
-def lessgo(message):
-    
-    global is_running
-    is_running=True
-    bot.reply_to(message, f"Поиск сделки по {coin}")
+def handle_start_trading(message):
+    start_trading_process(message.chat.id)
 
-    # try:
-    #     symbol = coin[:-1]  # Ожидается формат "/chart BTCUSDT"
-    #     screenshot = get_tradingview_chart(symbol)
-    #     with open(screenshot, 'rb') as img:
-    #         bot.send_photo(message.chat.id, img)
-    # except IndexError:
-    #     bot.reply_to(message, "Пожалуйста, укажите символ валюты, например /chart BTCUSDT")
-
-    open_counter = 0
-    close_counter = 0
-    current_rsi = calculate_rsi()
-    bot.send_message(message.chat.id, f"rsi {round(current_rsi, 2)}\nоткртых сделок {open_counter}\nзакрытых сделок {close_counter}")
-    
-    while is_running:
-        #константы
-        current_rsi = calculate_rsi()
-        open_position = isinstance(client.get_all_position(), list)
-        if open_position:
-            long_position = client.get_all_position()[0]['currentQty'] > 0 
-            short_position = client.get_all_position()[0]['currentQty'] < 0 
-        #открытие
-        if open_position==False:
-            try:
-                if current_rsi >= up_border:
-                    client.create_market_order(coin, 'sell', leverage, size = size)
-                    open_counter += 1
-                if current_rsi <= low_border:
-                    client.create_market_order(coin, 'buy', leverage, size = size)
-                    open_counter += 1
-                else:
-                    pass
-            except Exception as e:
-                print(e)
-        #закрытие
-        if open_position==True:
-            try:
-                if long_position:
-                    if current_rsi >= long_stop_border:
-                        client.create_market_order(coin, 'sell', leverage, size = size)
-                        close_counter += 1
-                if short_position:
-                    if current_rsi <= short_close_border:
-                        client.create_market_order(coin, 'buy', leverage, size = size)
-                        close_counter += 1                     
-            except Exception as e:
-                print(e)
-        
-        bot.send_message(message.chat.id, f"rsi {round(current_rsi,2)}\nоткртых сделок {open_counter}\nзакрытых сделок {close_counter}")
-        time.sleep(time_sleep)
-                    
+# Обработчик нажатия кнопки "start"
 @bot.callback_query_handler(lambda query: query.data == "start")
-def lessgo(query):
-    global is_running
-    is_running=True
-    bot.reply_to(query.message, f"Поиск сделки по {coin}")
+def handle_start_callback(query):
+    start_trading_process(query.from_user.id)
+    
 
-    # try:
-    #     symbol = coin[:-1]  # Ожидается формат "/chart BTCUSDT"
-    #     screenshot = get_tradingview_chart(symbol)
-    #     with open(screenshot, 'rb') as img:
-    #         bot.send_photo(message.chat.id, img)
-    # except IndexError:
-    #     bot.reply_to(message, "Пожалуйста, укажите символ валюты, например /chart BTCUSDT")
-
-    open_counter = 0
-    close_counter = 0
-    current_rsi = calculate_rsi()
-    bot.send_message(query.from_user.id, f"rsi {round(current_rsi, 2)}\nоткртых сделок {open_counter}\nзакрытых сделок {close_counter}")
-
-    while is_running:
-        #константы
-        current_rsi = calculate_rsi()
-        open_position = isinstance(client.get_all_position(), list)
-        if open_position:
-            long_position = client.get_all_position()[0]['currentQty'] > 0 
-            short_position = client.get_all_position()[0]['currentQty'] < 0 
-        #открытие
-        if open_position==False:
-            try:
-                if current_rsi >= up_border:
-                    client.create_market_order(coin, 'sell', leverage, size = size)
-                    open_counter += 1
-                if current_rsi <= low_border:
-                    client.create_market_order(coin, 'buy', leverage, size = size)
-                    open_counter += 1
-                else:
-                    pass
-            except Exception as e:
-                print(e)
-        #закрытие
-        if open_position==True:
-            try:
-                if long_position:
-                    if current_rsi >= long_stop_border:
-                        client.create_market_order(coin, 'sell', leverage, size = size)
-                        close_counter += 1
-                if short_position:
-                    if current_rsi <= short_close_border:
-                        client.create_market_order(coin, 'buy', leverage, size = size)
-                        close_counter += 1                     
-            except Exception as e:
-                print(e)
-        markup = types.InlineKeyboardMarkup()
-        itembtn_str1 = types.InlineKeyboardButton('stop', callback_data='stop')
-        markup.add(itembtn_str1,)
-        bot.send_message(query.from_user.id, f"rsi {round(current_rsi,2)}\nоткртых сделок {open_counter}\nзакрытых сделок {close_counter}")
-        time.sleep(time_sleep)
-
-
-
-
-
-
+# Обработчик нажатия кнопки "STOP❌❌❌"
 @bot.message_handler(func=lambda message: message.text == "STOP❌❌❌")
 def handle_stop(message):
-    #отсановка
-    global is_running
-    is_running = False
-    print('IS RANIN', is_running)
-    #закрытие
-    try:
-        open_position = isinstance(client.get_all_position(), list)
-        if open_position==True:
-            if client.get_all_position()[0]['currentQty'] > 0:
-                client.create_market_order(coin, 'sell', leverage, size = size)
-            else:
-                client.create_market_order(coin, 'buy', leverage, size = size)                
+    stop_trading_process(message.chat.id)
 
-        bot.reply_to(message, text = f"--Робот удален. Все койны проданы.--\n")
-    except Exception as e:
-        print(e)
-    #pnl
-    try:
-        rev = calculate_24h_pnl()
-        if rev >= 0:
-            bot.reply_to(message, f"Ваш профит составил {rev} USDT") 
-        else:
-            bot.reply_to(message, f"Ваш убыток составил {rev} USDT") 
-    except Exception as e:
-        print(e)
-
+# Обработчик нажатия кнопки "stop"
 @bot.callback_query_handler(lambda query: query.data == "stop")
-def lessgo(query):
-    global is_running
-    is_running = False
-    print('IS RANIN', is_running)
-    #закрытие
-    try:
-        open_position = isinstance(client.get_all_position(), list)
-        if open_position==True:
-            if client.get_all_position()[0]['currentQty'] > 0:
-                client.create_market_order(coin, 'sell', leverage, size = size)
-            else:
-                client.create_market_order(coin, 'buy', leverage, size = size)                
-
-        msg = f"--Робот удален. Все койны проданы.--\n"
-    except Exception as e:
-        return
-    #pnl
-    try:
-        rev = calculate_24h_pnl()
-        if rev >= 0:
-            msg += f"Ваш профит составил {rev} USDT"
-        else:
-            msg += f"Ваш убыток составил {rev} USDT"
-    except Exception as e:
-        return
-    markup = types.InlineKeyboardMarkup()
-    itembtn_str1 = types.InlineKeyboardButton('назад', callback_data='menu')
-    markup.add(itembtn_str1,)
-    #bot.edit_message_text(chat_id=query.from_user.id, text=msg, message_id=query.message.id, reply_markup=markup)
-    bot.send_message(chat_id=query.from_user.id, text=msg)
+def handle_stop_callback(query):
+    stop_trading_process(query.from_user.id)
 
 
 
@@ -351,10 +189,7 @@ def lessgo(message):
 
 @bot.callback_query_handler(lambda query: query.data == "pos")
 def lessgo(query):
-    # from pnl import current_position
-    # res = current_position()
-    #res = client.get_position_details(coin)['symbol']
-    res = str(client.get_all_position())
+    res = str(client.get_all_position()) #kucoin
     markup = types.InlineKeyboardMarkup()
     itembtn_str1 = types.InlineKeyboardButton('назад', callback_data='menu')
     markup.add(itembtn_str1,)
@@ -362,19 +197,13 @@ def lessgo(query):
 
 @bot.message_handler(commands=['pos'])
 def lessgo(message):
-    # from pnl import current_position
-    # res = current_position()
-    #res = client.get_position_details(coin)
-    res = client.get_all_position()
+    res = client.get_all_position() #kucoin
     bot.send_message(message.chat.id, f"{res}")
-
-
 
 
 
 @bot.callback_query_handler(lambda query: query.data == "24h_pnl")
 def lessgo(query):
-    from pnl import calculate_24h_pnl
     res = calculate_24h_pnl()
     markup = types.InlineKeyboardMarkup()
     itembtn_str1 = types.InlineKeyboardButton('назад', callback_data='menu')
@@ -383,8 +212,7 @@ def lessgo(query):
 
 @bot.message_handler(commands=['24h_pnl'])
 def lessgo(message):
-    from pnl import calculate_24h_pnl
-    res = calculate_24h_pnl()
+    res = calculate_24h_pnl() #kucoin
     bot.send_message(message.chat.id, f"{res} USDT")
 
 
