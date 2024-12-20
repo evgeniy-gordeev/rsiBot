@@ -4,10 +4,11 @@ from telebot import types
 import time
 import json
 
-
 from kucoin import start_trading_process, stop_trading_process, current_position, calculate_24h_pnl
 from rsi import calculate_rsi
-from utils import read_config, write_config, create_main_menu_markup
+from utils import read_config, write_config, create_main_menu_markup, create_stock_choose
+from stocks import BinanceStock, BybitStock, KucoinStock
+import pprint
 
 #параметры API(подключения к KuCoin) !!!
 api_key = '671647ad5913dd0001518e91'
@@ -15,11 +16,14 @@ api_secret = '0c48f805-39ec-49db-b97a-ea3a6595789b'
 api_passphrase = 'VL.45E29ZqN4czL'
 
 #bot KEY
-bot_key = "7473391752:AAGAs30m3u_opiNbzJVvE-OhOGYRBmRm4Zg"
+# bot_key = "7473391752:AAGAs30m3u_opiNbzJVvE-OhOGYRBmRm4Zg"
+bot_key = "7283067661:AAFbhuZ8nkukgoRd6wFDxyTS3rP-yK9tiYQ"
 
 #клиент KuCoin
-client = Trade(key=api_key, secret=api_secret, passphrase=api_passphrase)
+# client = Trade(key=api_key, secret=api_secret, passphrase=api_passphrase)
 bot = telebot.TeleBot(token=bot_key)
+# bot.enable_save_next_step_handlers(delay=2)
+# bot.load_next_step_handlers()
 
 #параметры расчета RSI
 CONFIG_FILE = "config.json"
@@ -34,14 +38,29 @@ low_border = config_data.get("low_border")
 long_stop_border = config_data.get("long_stop_border")
 is_running = False
 time_sleep = 5
+client = None
 
 
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    markup = create_main_menu_markup()
-    response = "ГЛАВНОЕ МЕНЮ"
-    bot.send_message(message.chat.id, text=response, reply_markup=markup)
+    text_to_print = "Выберите биржу"
+    markup = create_stock_choose()
+    bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+
+
+@bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
+def handle_start_trading(query):
+    global client
+    args = [bot, query.from_user.id, handle_start, config_data]
+    if query.data == 'binance':
+        client = BinanceStock(*args)
+    elif query.data == 'bybit':
+        client = BybitStock(*args)
+    else:
+        client = KucoinStock(*args)
+    client.get_keys(query.message.id)
+
 
 @bot.callback_query_handler(lambda query: query.data == "menu")
 def handle_menu(query):
@@ -50,27 +69,26 @@ def handle_menu(query):
     bot.edit_message_text(chat_id=query.from_user.id, text=response, message_id=query.message.id, reply_markup=markup)
 
 
-
 # Обработчик нажатия кнопки "Запуск🚀🚀🚀"
 @bot.message_handler(func=lambda message: message.text == "Запуск🚀🚀🚀")
 def handle_start_trading(message):
-    start_trading_process(message.chat.id)
+    client.start_trading_process(message.chat.id)
 
 # Обработчик нажатия кнопки "start"
 @bot.callback_query_handler(lambda query: query.data == "start")
 def handle_start_callback(query):
-    start_trading_process(query.from_user.id)
+    client.start_trading_process(query.from_user.id)
     
 
 # Обработчик нажатия кнопки "STOP❌❌❌"
 @bot.message_handler(func=lambda message: message.text == "STOP❌❌❌")
 def handle_stop(message):
-    stop_trading_process(message.chat.id)
+    client.stop_trading_process(message.chat.id)
 
 # Обработчик нажатия кнопки "stop"
 @bot.callback_query_handler(lambda query: query.data == "stop")
 def handle_stop_callback(query):
-    stop_trading_process(query.from_user.id)
+    client.stop_trading_process(query.from_user.id)
 
 
 
@@ -156,9 +174,6 @@ def set_config_value(message):
     bot.reply_to(message, f"Поле '{field}' успешно обновлено на '{value}'.")
 
 
-
-
-
 @bot.callback_query_handler(lambda query: query.data == "settings")
 def lessgo(query):
     with open('config.json', 'r') as file:
@@ -183,8 +198,6 @@ def lessgo(message):
         response += f"{key}: {value}\n"
     
     bot.send_message(message.chat.id, response)
-
-
 
 
 @bot.callback_query_handler(lambda query: query.data == "pos")

@@ -40,3 +40,14 @@ def create_main_menu_markup():
     markup.add(itembtn_str5)
     markup.add(itembtn_str6)
     return markup
+
+
+def create_stock_choose():
+    markup = types.InlineKeyboardMarkup()
+    itembtn_str1 = types.InlineKeyboardButton('Binance', callback_data='binance')
+    itembtn_str2 = types.InlineKeyboardButton('Bybit', callback_data='bybit')
+    itembtn_str3 = types.InlineKeyboardButton('KuCoin', callback_data='kucoin')
+    markup.add(itembtn_str1)
+    markup.add(itembtn_str2)
+    markup.add(itembtn_str3)
+    return markup

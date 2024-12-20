@@ -5,7 +5,6 @@ from telebot import types
 import time
 from datetime import datetime
 import json
-import pymssql
 
 #параметры API(подключения к KuCoin) !!!
 api_key = '671647ad5913dd0001518e91'

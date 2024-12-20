@@ -1,0 +1,5 @@
+kucoin_futures_python==1.0.8
+numpy
+pandas
+selenium
+webdriver_manager==4.0.2
