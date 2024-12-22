@@ -72,6 +72,7 @@ class KucoinStock(BaseStock):
         self.bot.send_message(chat_id, f"Поиск сделки по {self.config['coin']}")
         self.open_counter = 0
         self.close_counter = 0
+        self.msg_id = None
 
         try:
             while self.is_running:
@@ -120,11 +121,17 @@ class KucoinStock(BaseStock):
 
                 # Отправка обновления статуса
                 status_message = (
-                    f"RSI: {round(current_rsi, 2)}\n"
-                    f"Открытых сделок: {self.open_counter}\n"
-                    f"Закрытых сделок: {self.close_counter}"
-                )
-                self.bot.send_message(chat_id, status_message)
+                        F"`{datetime.now().strftime("%H:%M:%S  %d-%m-%Y")}`\n"
+                        f"RSI: {round(current_rsi, 2)}\n"
+                        f"Открытых сделок: {self.open_counter}\n"
+                        f"Закрытых сделок: {self.close_counter}"
+                    )
+
+                if self.msg_id:
+                    status_msg = self.bot.edit_message_text(chat_id=chat_id, text=status_message, message_id=self.msg_id, parse_mode='Markdown')
+                else:
+                    status_msg = self.bot.send_message(chat_id, status_message, parse_mode='Markdown')
+                    self.msg_id = status_msg.id
 
                 time.sleep(self.time_sleep)
         except Exception as e:

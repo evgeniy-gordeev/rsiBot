@@ -95,12 +95,12 @@ class BinanceStock(BaseStock):
                             self.client.futures_change_leverage(symbol=self.config['coin'], leverage=leverage)
                             self.client.futures_create_order(symbol=self.config['coin'], side='SELL', type='MARKET', quantity=self.config['size'])
                             self.open_counter += 1
-                            self.bot.send_message(chat_id, f"Открыта короткая позиция по {self.config['coin']}")
+                            # self.bot.send_message(chat_id, f"Открыта короткая позиция по {self.config['coin']}")
                         elif current_rsi <= self.config['low_border']:
                             self.client.futures_change_leverage(symbol=self.config['coin'], leverage=leverage)
                             self.client.futures_create_order(symbol=self.config['coin'], side='BUY', type='MARKET', quantity=self.config['size'])
                             self.open_counter += 1
-                            self.bot.send_message(chat_id, f"Открыта длинная позиция по {self.config['coin']}")
+                            # self.bot.send_message(chat_id, f"Открыта длинная позиция по {self.config['coin']}")
                     except Exception as e:
                         self.bot.send_message(chat_id, f"Ошибка при открытии позиции: {e}")
 
@@ -111,12 +111,12 @@ class BinanceStock(BaseStock):
                             self.client.futures_change_leverage(symbol=self.config['coin'], leverage=leverage)
                             self.client.futures_create_order(symbol=self.config['coin'], side='SELL', type='MARKET', quantity=self.config['size'])
                             self.close_counter += 1
-                            self.bot.send_message(chat_id, f"Закрыта длинная позиция по {self.config['coin']}")
+                            # self.bot.send_message(chat_id, f"Закрыта длинная позиция по {self.config['coin']}")
                         elif short_position and current_rsi <= self.config['short_close_border']:
                             self.client.futures_change_leverage(symbol=self.config['coin'], leverage=leverage)
                             self.client.futures_create_order(symbol=self.config['coin'], side='BUY', type='MARKET', quantity=self.config['size'])
                             self.close_counter += 1
-                            self.bot.send_message(chat_id, f"Закрыта короткая позиция по {self.config['coin']}")
+                            # self.bot.send_message(chat_id, f"Закрыта короткая позиция по {self.config['coin']}")
                     except Exception as e:
                         self.bot.send_message(chat_id, f"Ошибка при закрытии позиции: {e}")
 
