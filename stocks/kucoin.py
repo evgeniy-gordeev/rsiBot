@@ -1,6 +1,10 @@
 import time
+from datetime import datetime
+import pdb
 
-from kucoin_futures.client import Trade
+from kucoin_futures.client import Trade, Market
+import pandas as pd
+import numpy as np
 
 from .base import BaseStock 
 
@@ -8,6 +12,8 @@ from .base import BaseStock
 class KucoinStock(BaseStock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.client: Trade
+        self.market: Market
     
     def get_keys(self, message_id):
         text = '\n'.join(["Enter keys in order:", "API_KEY", "API_SECRET", "API_PASSPHRASE"])
@@ -18,8 +24,6 @@ class KucoinStock(BaseStock):
     def parse_api_keys(self, msg, message_id):
         self.api_key, self.api_secret, self.api_passphrase = msg.text.split("\n")
         self.bot.delete_message(self.chat_id, msg.id)
-        print(msg)
-        print(self.api_key, self.api_secret, self.api_passphrase)
         self.init_client()
         self.main_menu(message_id)
 
@@ -29,6 +33,35 @@ class KucoinStock(BaseStock):
             secret=self.api_secret, 
             passphrase=self.api_passphrase,
         )
+
+        self.market = Market(
+            key=self.api_key, 
+            secret=self.api_secret, 
+            passphrase=self.api_passphrase,
+        )
+
+    def calculate_rsi(self):
+        klines = self.market.get_kline_data(symbol=self.config['coin'], granularity=self.config['tf'])
+        
+        for el in klines:
+            el[0] = datetime.fromtimestamp(int(el[0])/1000)
+
+        df = pd.DataFrame({
+            'dt': [x[0] for x in klines],
+            'open': [x[1] for x in klines],
+            'close': [x[4] for x in klines]
+        })
+
+        df['u'] = np.where(df.close > df.open, df.close - df.open, 0)
+        df['d'] = np.where(df.close < df.open, df.open - df.close, 0)
+
+        df[f'ema_{self.config["n_periods"]}_u'] = df.u.ewm(alpha=1/self.config["n_periods"], adjust=True).mean()
+        df[f'ema_{self.config["n_periods"]}_d'] = df.d.ewm(alpha=1/self.config["n_periods"], adjust=True).mean()
+
+        df['rs'] = df[f'ema_{self.config["n_periods"]}_u'] / df[f'ema_{self.config["n_periods"]}_d']
+        df['rsi'] = 100 - 100 / (1 + df['rs'])
+
+        return df['rsi'].tail(1).values[0]
         
     def start_trading_process(self, chat_id):
         if self.is_running:
@@ -138,11 +171,6 @@ class KucoinStock(BaseStock):
     # Функия показывающая текущую позицию
     def current_position(self):
         res = self.client.get_all_position()
-        # keys = ['symbol', 'realisedPnl']
-        # res_ = {}
-        # for k,v in res.items():
-        #     if k in keys:
-        #         res_[k]=v
         return res
 
     # Функия показывающая прибыль
@@ -151,6 +179,8 @@ class KucoinStock(BaseStock):
         import datetime
         res = self.client.get_24h_done_order()
         print(res)
+        if len(res['data']) == 0:
+            return 0
         res = pd.json_normalize(res)
         print(res)
         res['createdAt'] = res['createdAt'].apply(lambda x: datetime.datetime.fromtimestamp(x / 1000).strftime('%H:%M'))

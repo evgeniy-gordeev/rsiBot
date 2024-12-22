@@ -1,23 +1,20 @@
-from kucoin_futures.client import Trade
+import os 
+
 import telebot
 from telebot import types
 import time
 import json
+from dotenv import load_dotenv
+load_dotenv()
 
-from kucoin import start_trading_process, stop_trading_process, current_position, calculate_24h_pnl
-from rsi import calculate_rsi
 from utils import read_config, write_config, create_main_menu_markup, create_stock_choose
 from stocks import BinanceStock, BybitStock, KucoinStock
 import pprint
 
-#параметры API(подключения к KuCoin) !!!
-api_key = '671647ad5913dd0001518e91'
-api_secret = '0c48f805-39ec-49db-b97a-ea3a6595789b'  
-api_passphrase = 'VL.45E29ZqN4czL'
 
 #bot KEY
 # bot_key = "7473391752:AAGAs30m3u_opiNbzJVvE-OhOGYRBmRm4Zg"
-bot_key = "7283067661:AAFbhuZ8nkukgoRd6wFDxyTS3rP-yK9tiYQ"
+bot_key = os.environ['BOT_KEY']
 
 #клиент KuCoin
 # client = Trade(key=api_key, secret=api_secret, passphrase=api_passphrase)
@@ -39,7 +36,6 @@ long_stop_border = config_data.get("long_stop_border")
 is_running = False
 time_sleep = 5
 client = None
-
 
 
 @bot.message_handler(commands=['start'])
@@ -74,6 +70,7 @@ def handle_menu(query):
 def handle_start_trading(message):
     client.start_trading_process(message.chat.id)
 
+
 # Обработчик нажатия кнопки "start"
 @bot.callback_query_handler(lambda query: query.data == "start")
 def handle_start_callback(query):
@@ -85,11 +82,11 @@ def handle_start_callback(query):
 def handle_stop(message):
     client.stop_trading_process(message.chat.id)
 
+
 # Обработчик нажатия кнопки "stop"
 @bot.callback_query_handler(lambda query: query.data == "stop")
 def handle_stop_callback(query):
     client.stop_trading_process(query.from_user.id)
-
 
 
 @bot.callback_query_handler(lambda query: query.data == "set")
@@ -144,6 +141,7 @@ def test(message,old_msg,key):
     config[field] = value
     write_config(config)
     bot.edit_message_text(chat_id=message.chat.id, text=f"Поле '{field}' успешно обновлено на '{value}'.", message_id=old_msg.id, reply_markup=markup)
+
 
 @bot.message_handler(commands=['set'])
 def set_config_value(message):
@@ -202,32 +200,32 @@ def lessgo(message):
 
 @bot.callback_query_handler(lambda query: query.data == "pos")
 def lessgo(query):
-    res = str(client.get_all_position()) #kucoin
+    res = str(client.current_position()) #kucoin
     markup = types.InlineKeyboardMarkup()
     itembtn_str1 = types.InlineKeyboardButton('назад', callback_data='menu')
     markup.add(itembtn_str1,)
     bot.edit_message_text(chat_id=query.from_user.id, text=res, message_id=query.message.id, reply_markup=markup)
 
+
 @bot.message_handler(commands=['pos'])
 def lessgo(message):
-    res = client.get_all_position() #kucoin
+    res = client.current_position() #kucoin
     bot.send_message(message.chat.id, f"{res}")
-
 
 
 @bot.callback_query_handler(lambda query: query.data == "24h_pnl")
 def lessgo(query):
-    res = calculate_24h_pnl()
+    res = client.calculate_24h_pnl()
     markup = types.InlineKeyboardMarkup()
     itembtn_str1 = types.InlineKeyboardButton('назад', callback_data='menu')
     markup.add(itembtn_str1,)
     bot.edit_message_text(chat_id=query.from_user.id, text=f"{res} USDT", message_id=query.message.id, reply_markup=markup)
 
+
 @bot.message_handler(commands=['24h_pnl'])
 def lessgo(message):
-    res = calculate_24h_pnl() #kucoin
+    res = client.calculate_24h_pnl()
     bot.send_message(message.chat.id, f"{res} USDT")
-
 
 
 # Запуск бота

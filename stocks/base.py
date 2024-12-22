@@ -1,7 +1,6 @@
 from telebot import TeleBot
 
 from utils import create_main_menu_markup
-from rsi import calculate_rsi
 
 
 class BaseStock():
@@ -16,7 +15,6 @@ class BaseStock():
         self.after_init = after_init_handle_function
         self.client = None
         self.config = config
-        self.calculate_rsi = calculate_rsi
     
     def main_menu(self, message_id):
         markup = create_main_menu_markup()
