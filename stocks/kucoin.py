@@ -182,16 +182,14 @@ class KucoinStock(BaseStock):
 
     # Функия показывающая прибыль
     def calculate_24h_pnl(self):
-        import pandas as pd
-        import datetime
         res = self.client.get_24h_done_order()
         print(res)
-        if len(res['data']) == 0:
+        if not isinstance(res, list):
             return 0
         res = pd.json_normalize(res)
-        print(res)
-        res['createdAt'] = res['createdAt'].apply(lambda x: datetime.datetime.fromtimestamp(x / 1000).strftime('%H:%M'))
-        res['endAt'] = res['endAt'].apply(lambda x: datetime.datetime.fromtimestamp(x / 1000).strftime('%H:%M'))
+
+        res['createdAt'] = res['createdAt'].apply(lambda x: datetime.fromtimestamp(x / 1000).strftime('%H:%M'))
+        res['endAt'] = res['endAt'].apply(lambda x: datetime.fromtimestamp(x / 1000).strftime('%H:%M'))
 
         def calculate_total_pnl(df):
             df['value'] = pd.to_numeric(df['value'], errors='coerce')
@@ -213,10 +211,10 @@ class KucoinStock(BaseStock):
                     if (open_position == 'buy' and row['side'] == 'sell') or (open_position == 'sell' and row['side'] == 'buy'):
                         if open_position == 'buy':
                             pnl = row['value'] - entry_price
-                            pnl -= row['value']*taker_fee + entry_price*maker_fee
+                            pnl -= row['value']*taker_fee + entry_price * maker_fee
                         else:
                             pnl = entry_price - row['value']
-                            pnl -= row['value']*taker_fee + entry_price*maker_fee
+                            pnl -= row['value']*taker_fee + entry_price * maker_fee
                         total_pnl += pnl
                         
                         # Сброс позиции после её закрытия
