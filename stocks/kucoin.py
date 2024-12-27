@@ -121,11 +121,11 @@ class KucoinStock(BaseStock):
 
                 # Отправка обновления статуса
                 status_message = (
-                        F"`{datetime.now().strftime("%H:%M:%S  %d-%m-%Y")}`\n"
-                        f"RSI: {round(current_rsi, 2)}\n"
-                        f"Открытых сделок: {self.open_counter}\n"
-                        f"Закрытых сделок: {self.close_counter}"
-                    )
+                    f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
+                    f"RSI: {round(current_rsi, 2)}\n"
+                    f"Открытых сделок: {self.open_counter}\n"
+                    f"Закрытых сделок: {self.close_counter}"
+                )
 
                 if self.msg_id:
                     status_msg = self.bot.edit_message_text(chat_id=chat_id, text=status_message, message_id=self.msg_id, parse_mode='Markdown')
