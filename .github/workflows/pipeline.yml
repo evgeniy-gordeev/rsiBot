@@ -1,0 +1,64 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+env:
+  ANSIBLE_IMAGE: 999669/ansible-3.5:latest
+  KANIKO_IMAGE: gcr.io/kaniko-project/executor:debug
+  DOCKERFILE: .docker/Dockerfile
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Docker Config
+        run: |
+          echo "{\"auths\":{\"${{ secrets.CI_REGISTRY }}\":{\"username\":\"${{ secrets.CI_REGISTRY_USER }}\",\"password\":\"${{ secrets.CI_REGISTRY_PASSWORD }}\"}}}" > /kaniko/.docker/config.json
+
+      - name: Build Docker Image
+        run: |
+          /kaniko/executor \
+          --context ./ \
+          --dockerfile ./${{ env.DOCKERFILE }} \
+          --destination ${{ secrets.CI_REGISTRY_IMAGE }}:${{ github.sha }} \
+          --destination ${{ secrets.CI_REGISTRY_IMAGE }}:latest \
+          --cache=true
+
+  deploy:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref_name == 'dev' || github.ref_name == 'main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_DEPLOY_KEY }}" | tr -d '\r' > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+      - name: Run Ansible Playbook
+        run: |
+          docker run --rm \
+          -v $(pwd):/workspace \
+          -v ~/.ssh:/root/.ssh \
+          ${{ env.ANSIBLE_IMAGE }} \
+          ansible-playbook -v .ansible/deploy-dev.yaml \
+          --private-key="/root/.ssh/deploy" \
+          -i ".ansible/inventory/hosts" \
+          -e docker_registry_creds_username="${{ secrets.CI_REGISTRY_USER }}" \
+          -e docker_registry_creds_password="${{ secrets.CI_REGISTRY_PASSWORD }}" \
+          -e docker_registry_data="${{ secrets.CI_REGISTRY_IMAGE }}" \
+          -e app_version="${{ github.sha }}" \
+          -e docker_registry_url="${{ secrets.CI_REGISTRY }}"
