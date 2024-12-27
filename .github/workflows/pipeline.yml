@@ -3,8 +3,8 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - dev
-      - main
+      - develop
+      - master
 
 env:
   ANSIBLE_IMAGE: 999669/ansible-3.5:latest
@@ -36,7 +36,7 @@ jobs:
     name: Deploy to Development
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref_name == 'dev' || github.ref_name == 'main'
+    if: github.ref_name == 'develop' || github.ref_name == 'master'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
