@@ -69,3 +69,34 @@ jobs:
           -e docker_registry_creds_password=${{ secrets.CI_REGISTRY_PASSWORD }} \
           -e docker_registry_data=${{ secrets.CI_REGISTRY_IMAGE }} \
           -e app_version=${{ github.sha }} -e docker_registry_url=${{ secrets.CI_REGISTRY }}"
+
+  deploy-master:
+    name: Deploy to Master
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'master'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_DEPLOY_KEY }}" | tr -d '\r' > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+          chmod 644 ~/.ssh/config
+
+      - name: Run Ansible Playbook using Docker
+        run: |
+          # Fix permissions inside the container
+          docker run --rm \
+          -v $(pwd):/workspace \
+          -v ~/.ssh:/root/.ssh \
+          ${{ env.ANSIBLE_IMAGE }} \
+          bash -c "chown -R root:root /root && chmod 600 /root/.ssh/deploy && chmod 644 /root/.ssh/config && ansible-playbook -v /workspace/.ansible/deploy-master.yaml \
+          --private-key=/root/.ssh/deploy -i /workspace/.ansible/inventory/hosts \
+          -e docker_registry_creds_username=${{ secrets.CI_REGISTRY_USER }} \
+          -e docker_registry_creds_password=${{ secrets.CI_REGISTRY_PASSWORD }} \
+          -e docker_registry_data=${{ secrets.CI_REGISTRY_IMAGE }} \
+          -e app_version=${{ github.sha }} -e docker_registry_url=${{ secrets.CI_REGISTRY }}"

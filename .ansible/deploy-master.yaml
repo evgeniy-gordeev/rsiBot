@@ -1,0 +1,30 @@
+---
+- name: Deploy project
+  hosts: all
+
+  tasks:
+    - name: Login to the docker registry
+      shell: docker login --username "{{ docker_registry_creds_username }}" --password "{{ docker_registry_creds_password }}" "{{ docker_registry_url }}"
+
+    - name: Pull backend docker image
+      shell: docker pull "{{ docker_registry_data }}:{{ app_version }}"
+
+    - name: Check docker directory existence
+      file:
+        path: "/opt/rsi-bot-prod"
+        state: directory
+
+    - name: Create templates
+      template:
+        src: templates/{{ item }}.j2
+        dest: "/opt/rsi-bot-prod/{{ item }}"
+      with_items:
+        - docker-compose-master.yaml
+
+    - name: Start docker compose
+      shell: docker compose -f /opt/rsi-bot-prod/docker-compose-master.yaml up -d
+
+    - name: Remove unused Docker images
+      command: >
+        docker image prune --force --all --filter "until=2h"
+
