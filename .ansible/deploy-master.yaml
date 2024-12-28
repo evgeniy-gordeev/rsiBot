@@ -11,18 +11,18 @@
 
     - name: Check docker directory existence
       file:
-        path: "/opt/rsi-bot"
+        path: "/opt/rsi-bot-prod"
         state: directory
 
     - name: Create templates
       template:
         src: templates/{{ item }}.j2
-        dest: "/opt/rsi-bot/{{ item }}"
+        dest: "/opt/rsi-bot-prod/{{ item }}"
       with_items:
-        - docker-compose-dev.yaml
+        - docker-compose-master.yaml
 
     - name: Start docker compose
-      shell: docker compose -f /opt/rsi-bot/docker-compose-dev.yaml up -d
+      shell: docker compose -f /opt/rsi-bot-prod/docker-compose-master.yaml up -d
 
     - name: Remove unused Docker images
       command: >
