@@ -200,7 +200,7 @@ class BinanceStock(BaseStock):
 
                 # Отправка обновления статуса
                 status_message = (
-                    f"`{datetime.now().strftime("%H:%M:%S  %d-%m-%Y")}`\n"
+                    f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
                     f"RSI: {round(current_rsi, 2)}\n"
                     f"Открытых сделок: {self.open_counter}\n"
                     f"Закрытых сделок: {self.close_counter}"

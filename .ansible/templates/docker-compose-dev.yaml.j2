@@ -1,0 +1,12 @@
+services:
+  app:
+    image: {{ docker_registry_data }}:{{ app_version }}
+    env_file:
+      - ./app.env
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+    driver: bridge
