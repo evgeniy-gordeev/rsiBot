@@ -43,7 +43,7 @@ jobs:
     name: Deploy to Development
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref_name == 'develop' || github.ref_name == 'master'
+    if: github.ref_name == 'develop'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
