@@ -4,8 +4,6 @@ services:
     env_file:
       - ./app.env
     restart: unless-stopped
-    depends_on:
-      - db
     networks:
       - dev-network
 

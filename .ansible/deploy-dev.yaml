@@ -14,13 +14,6 @@
         path: "/opt/rsi-bot"
         state: directory
 
-    - name: Check config directories existence
-      file:
-        path: "/opt/rsi-bot/{{ item }}"
-        state: directory
-      with_items:
-        - "nginx/conf"
-
     - name: Create templates
       template:
         src: templates/{{ item }}.j2

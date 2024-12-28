@@ -7,9 +7,8 @@ on:
       - master
 
 env:
-  ANSIBLE_IMAGE: 999669/ansible-3.5:latest
-  KANIKO_IMAGE: gcr.io/kaniko-project/executor:debug
-  DOCKERFILE: .docker/Dockerfile
+  ANSIBLE_IMAGE: "999669/ansible-3.5:latest"
+  DOCKERFILE: ".docker/Dockerfile"
 
 jobs:
   build:
@@ -19,23 +18,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Docker Config
+      - name: Checkout develop branch
         run: |
-          echo "{\"auths\":{\"${{ secrets.CI_REGISTRY }}\":{\"username\":\"${{ secrets.CI_REGISTRY_USER }}\",\"password\":\"${{ secrets.CI_REGISTRY_PASSWORD }}\"}}}" > /kaniko/.docker/config.json
+          git fetch origin develop
+          git checkout develop
 
-      - name: Build Docker Image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.CI_REGISTRY_USER }}
+          password: ${{ secrets.CI_REGISTRY_PASSWORD }}
+
+      - name: Build and push Docker image
         run: |
-          /kaniko/executor \
-          --context ./ \
-          --dockerfile ./${{ env.DOCKERFILE }} \
-          --destination ${{ secrets.CI_REGISTRY_IMAGE }}:${{ github.sha }} \
-          --destination ${{ secrets.CI_REGISTRY_IMAGE }}:latest \
-          --cache=true
+          docker build -t ${{ secrets.CI_REGISTRY_IMAGE }}:${{ github.sha }} -f ./${{ env.DOCKERFILE }} .
+          docker tag ${{ secrets.CI_REGISTRY_IMAGE }}:${{ github.sha }} ${{ secrets.CI_REGISTRY_IMAGE }}:latest
+          docker push ${{ secrets.CI_REGISTRY_IMAGE }}:${{ github.sha }}
+          docker push ${{ secrets.CI_REGISTRY_IMAGE }}:latest
 
   deploy:
     name: Deploy to Development
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
     if: github.ref_name == 'develop' || github.ref_name == 'master'
     steps:
       - name: Checkout code
@@ -47,18 +54,18 @@ jobs:
           echo "${{ secrets.SSH_DEPLOY_KEY }}" | tr -d '\r' > ~/.ssh/deploy
           chmod 600 ~/.ssh/deploy
           echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+          chmod 644 ~/.ssh/config
 
-      - name: Run Ansible Playbook
+      - name: Run Ansible Playbook using Docker
         run: |
+          # Fix permissions inside the container
           docker run --rm \
           -v $(pwd):/workspace \
           -v ~/.ssh:/root/.ssh \
           ${{ env.ANSIBLE_IMAGE }} \
-          ansible-playbook -v .ansible/deploy-dev.yaml \
-          --private-key="/root/.ssh/deploy" \
-          -i ".ansible/inventory/hosts" \
-          -e docker_registry_creds_username="${{ secrets.CI_REGISTRY_USER }}" \
-          -e docker_registry_creds_password="${{ secrets.CI_REGISTRY_PASSWORD }}" \
-          -e docker_registry_data="${{ secrets.CI_REGISTRY_IMAGE }}" \
-          -e app_version="${{ github.sha }}" \
-          -e docker_registry_url="${{ secrets.CI_REGISTRY }}"
+          bash -c "chown -R root:root /root && chmod 600 /root/.ssh/deploy && chmod 644 /root/.ssh/config && ansible-playbook -v /workspace/.ansible/deploy-dev.yaml \
+          --private-key=/root/.ssh/deploy -i /workspace/.ansible/inventory/hosts \
+          -e docker_registry_creds_username=${{ secrets.CI_REGISTRY_USER }} \
+          -e docker_registry_creds_password=${{ secrets.CI_REGISTRY_PASSWORD }} \
+          -e docker_registry_data=${{ secrets.CI_REGISTRY_IMAGE }} \
+          -e app_version=${{ github.sha }} -e docker_registry_url=${{ secrets.CI_REGISTRY }}"
