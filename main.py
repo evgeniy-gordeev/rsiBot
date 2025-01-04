@@ -67,9 +67,9 @@ def back_button_logic(query):
 def back_button_logic2(query):
     text_to_print = "Выберите пару"
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("TON", callback_data="binance")) #toDo
-    markup.add(types.InlineKeyboardButton("SOL", callback_data="bybit")) #toDo
-    markup.add(types.InlineKeyboardButton("BTC", callback_data="kucoin")) #toDo
+    markup.add(types.InlineKeyboardButton("TON", callback_data="ton")) #toDo
+    markup.add(types.InlineKeyboardButton("SOL", callback_data="sol")) #toDo
+    markup.add(types.InlineKeyboardButton("BTC", callback_data="btc")) #toDo
     markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
     bot.edit_message_text(
         chat_id=query.from_user.id,
@@ -77,6 +77,20 @@ def back_button_logic2(query):
         message_id=query.message.id,
         reply_markup=markup,
     )
+
+@bot.callback_query_handler(lambda query: query.data in ["ton", "sol", "btc"])
+def handle_start_trading(query):
+    global config_data
+    if query.data == "ton":
+        config_data['stock'] = 'binance'
+        write_config(config_data)         
+    elif query.data == "bybit":
+        config_data['stock'] = 'bybit'
+        write_config(config_data)        
+    else:
+        config_data['stock'] = 'kucoin'
+        write_config(config_data)  
+
 
 @bot.callback_query_handler(lambda query: query.data in ["back", "choose_size"])
 def back_button_logic3(query):
@@ -92,10 +106,13 @@ def back_button_logic3(query):
         reply_markup=markup,
     )
 
+    
+
 @bot.callback_query_handler(lambda query: query.data in ["enter_usdt", "enter_leverage"])
 def handle_choose_size(query):
+    global config_data
     if query.data == "enter_usdt": #ToDo
-        text_to_print = "Введите новое значение для поля size\nТекущее значение 5"
+        text_to_print = f"Введите новое значение для поля size\nТекущее значение {config_data['size']}"
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("назад", callback_data="choose_size"))
         bot.edit_message_text(
@@ -105,7 +122,7 @@ def handle_choose_size(query):
             reply_markup=markup
         )
     else: #ToDo
-        text_to_print = "Введите новое значение для поля leverage\nТекущее значение 5"
+        text_to_print = f"Введите новое значение для поля leverage\nТекущее значение {config_data['leverage']}"
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("назад", callback_data="choose_size"))
         bot.edit_message_text(
@@ -118,12 +135,19 @@ def handle_choose_size(query):
 @bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
 def handle_start_trading(query):
     global client
+    global config_data
     args = [bot, query.from_user.id, handle_start, config_data]
     if query.data == "binance":
+        config_data['stock'] = 'binance'
+        write_config(config_data)         
         client = BinanceStock(*args)
     elif query.data == "bybit":
+        config_data['stock'] = 'bybit'
+        write_config(config_data)        
         client = BybitStock(*args)
     else:
+        config_data['stock'] = 'kucoin'
+        write_config(config_data)  
         client = KucoinStock(*args)
     client.get_keys(query.message.id)
 
@@ -280,7 +304,6 @@ def lessgo(query):
     response = ""
     for key, value in config_data.items():
         response += f"{key}: {value}\n"
-
     markup = types.InlineKeyboardMarkup()
     itembtn_str1 = types.InlineKeyboardButton("назад", callback_data="menu")
     markup.add(
