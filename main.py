@@ -78,6 +78,43 @@ def back_button_logic2(query):
         reply_markup=markup,
     )
 
+@bot.callback_query_handler(lambda query: query.data in ["back", "choose_size"])
+def back_button_logic3(query):
+    text_to_print = "Выберите размер позиции"
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("Введите кол-во USDT", callback_data="enter_usdt")) #toDo
+    markup.add(types.InlineKeyboardButton("Введите плечо", callback_data="enter_leverage")) #toDo
+    markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
+    bot.edit_message_text(
+        chat_id=query.from_user.id,
+        text=text_to_print,
+        message_id=query.message.id,
+        reply_markup=markup,
+    )
+
+@bot.callback_query_handler(lambda query: query.data in ["enter_usdt", "enter_leverage"])
+def handle_choose_size(query):
+    if query.data == "enter_usdt": #ToDo
+        text_to_print = "Введите новое значение для поля size\nТекущее значение 5"
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("назад", callback_data="choose_size"))
+        bot.edit_message_text(
+            chat_id=query.from_user.id,
+            text=text_to_print,
+            message_id=query.message.id,
+            reply_markup=markup
+        )
+    else: #ToDo
+        text_to_print = "Введите новое значение для поля leverage\nТекущее значение 5"
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("назад", callback_data="choose_size"))
+        bot.edit_message_text(
+            chat_id=query.from_user.id,
+            text=text_to_print,
+            message_id=query.message.id,
+            reply_markup=markup
+        )
+
 @bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
 def handle_start_trading(query):
     global client
