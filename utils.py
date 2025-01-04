@@ -51,12 +51,12 @@ def create_main_menu_markup():
     itembtn_str9 = types.InlineKeyboardButton(
         "Выбрать size", callback_data="choose_size"
     )        
-    markup.add(itembtn_str1, itembtn_str2)
     markup.add(itembtn_str7,itembtn_str8,itembtn_str9)
+    markup.add(itembtn_str1, itembtn_str2)
     markup.add(itembtn_str3)
-    markup.add(itembtn_str4)
-    markup.add(itembtn_str5)
-    markup.add(itembtn_str6)
+    #markup.add(itembtn_str4)
+    markup.add(itembtn_str5, itembtn_str6)
+    #markup.add(itembtn_str6)
     return markup
 
 
