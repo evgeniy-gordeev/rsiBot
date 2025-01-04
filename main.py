@@ -63,6 +63,21 @@ def back_button_logic(query):
     )
 
 
+@bot.callback_query_handler(lambda query: query.data in ["back", "choose_pair"])
+def back_button_logic2(query):
+    text_to_print = "Выберите пару"
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("TON", callback_data="binance")) #toDo
+    markup.add(types.InlineKeyboardButton("SOL", callback_data="bybit")) #toDo
+    markup.add(types.InlineKeyboardButton("BTC", callback_data="kucoin")) #toDo
+    markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
+    bot.edit_message_text(
+        chat_id=query.from_user.id,
+        text=text_to_print,
+        message_id=query.message.id,
+        reply_markup=markup,
+    )
+
 @bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
 def handle_start_trading(query):
     global client
