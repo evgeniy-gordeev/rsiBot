@@ -62,6 +62,24 @@ def back_button_logic(query):
         reply_markup=markup,
     )
 
+@bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
+def handle_start_trading(query):
+    global client
+    global config_data
+    args = [bot, query.from_user.id, handle_start, config_data]
+    if query.data == "binance":
+        config_data['stock'] = 'binance'
+        write_config(config_data)         
+        client = BinanceStock(*args)
+    elif query.data == "bybit":
+        config_data['stock'] = 'bybit'
+        write_config(config_data)        
+        client = BybitStock(*args)
+    else:
+        config_data['stock'] = 'kucoin'
+        write_config(config_data)  
+        client = KucoinStock(*args)
+    client.get_keys(query.message.id)
 
 @bot.callback_query_handler(lambda query: query.data in ["back", "choose_pair"])
 def back_button_logic2(query):
@@ -132,24 +150,7 @@ def handle_choose_size(query):
             reply_markup=markup
         )
 
-@bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
-def handle_start_trading(query):
-    global client
-    global config_data
-    args = [bot, query.from_user.id, handle_start, config_data]
-    if query.data == "binance":
-        config_data['stock'] = 'binance'
-        write_config(config_data)         
-        client = BinanceStock(*args)
-    elif query.data == "bybit":
-        config_data['stock'] = 'bybit'
-        write_config(config_data)        
-        client = BybitStock(*args)
-    else:
-        config_data['stock'] = 'kucoin'
-        write_config(config_data)  
-        client = KucoinStock(*args)
-    client.get_keys(query.message.id)
+
 
 
 @bot.callback_query_handler(lambda query: query.data in ["menu"])
