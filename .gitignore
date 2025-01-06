@@ -1,2 +1,8 @@
 __pycache__/
 .DS_Store
+.venv
+.handler-saves/
+.vscode
+.env
+.ipynb_checkpoints/
+*.ipynb
