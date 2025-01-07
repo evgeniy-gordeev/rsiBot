@@ -32,13 +32,14 @@ def write_config(data):
 
 def create_main_menu_markup():
     markup = types.InlineKeyboardMarkup()
+    itembtn_str0 = types.InlineKeyboardButton("Запуск клиента", callback_data="init_client")
     itembtn_str1 = types.InlineKeyboardButton("Запуск🚀🚀🚀", callback_data="start")
     itembtn_str2 = types.InlineKeyboardButton("STOP❌❌❌", callback_data="stop")
     itembtn_str3 = types.InlineKeyboardButton(
-        "отобразить настройки", callback_data="settings"
+        "Отобразить настройки", callback_data="settings"
     )
     itembtn_str4 = types.InlineKeyboardButton("изменить настройки", callback_data="set")
-    itembtn_str5 = types.InlineKeyboardButton("отобразить позицию", callback_data="pos")
+    itembtn_str5 = types.InlineKeyboardButton("Отобразить позицию", callback_data="pos")
     itembtn_str6 = types.InlineKeyboardButton(
         "calculate_24h_pnl", callback_data="24h_pnl"
     )
@@ -51,15 +52,20 @@ def create_main_menu_markup():
     itembtn_str9 = types.InlineKeyboardButton(
         "Статус подписки", callback_data="subscription_status"
     )
+    itembtn_str10 = types.InlineKeyboardButton(
+        "Выбрать пару", callback_data="choose_pair"
+    )
+    itembtn_str11 = types.InlineKeyboardButton(
+        "Выбрать size", callback_data="choose_size"
+    )     
+    markup.add(itembtn_str7,itembtn_str10,itembtn_str11)
+    markup.add(itembtn_str0)
     markup.add(itembtn_str1, itembtn_str2)
     markup.add(itembtn_str3)
-    markup.add(itembtn_str4)
-    markup.add(itembtn_str5)
-    markup.add(itembtn_str6)
-    markup.add(itembtn_str7)
-    markup.add(itembtn_str8)
-    markup.add(itembtn_str9)
+    markup.add(itembtn_str5, itembtn_str6)
+    markup.add(itembtn_str8, itembtn_str9)
     return markup
+
 
 
 def create_stock_choose():
@@ -67,14 +73,23 @@ def create_stock_choose():
     itembtn_str1 = types.InlineKeyboardButton("Binance", callback_data="binance")
     itembtn_str2 = types.InlineKeyboardButton("Bybit", callback_data="bybit")
     itembtn_str3 = types.InlineKeyboardButton("KuCoin", callback_data="kucoin")
+    itembtn_str4 = types.InlineKeyboardButton("Назад", callback_data="menu")
     markup.add(itembtn_str1)
     markup.add(itembtn_str2)
     markup.add(itembtn_str3)
+    markup.add(itembtn_str4)
     return markup
 
 
 def back_menu_button():
     markup = types.InlineKeyboardMarkup()
-    itembtn_str1 = types.InlineKeyboardButton("Back", callback_data="back")
+    itembtn_str1 = types.InlineKeyboardButton("Назад", callback_data="menu")
+    markup.add(itembtn_str1)
+    return markup
+
+
+def main_menu_button():
+    markup = types.InlineKeyboardMarkup()
+    itembtn_str1 = types.InlineKeyboardButton("Главное меню", callback_data="menu")
     markup.add(itembtn_str1)
     return markup
