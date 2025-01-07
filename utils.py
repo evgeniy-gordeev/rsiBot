@@ -45,12 +45,20 @@ def create_main_menu_markup():
     itembtn_str7 = types.InlineKeyboardButton(
         "Выбрать биржу", callback_data="choose_stock"
     )
+    itembtn_str8 = types.InlineKeyboardButton(
+        "Оплатить подписку", callback_data="buy"
+    )
+    itembtn_str9 = types.InlineKeyboardButton(
+        "Статус подписки", callback_data="subscription_status"
+    )
     markup.add(itembtn_str1, itembtn_str2)
     markup.add(itembtn_str3)
     markup.add(itembtn_str4)
     markup.add(itembtn_str5)
     markup.add(itembtn_str6)
     markup.add(itembtn_str7)
+    markup.add(itembtn_str8)
+    markup.add(itembtn_str9)
     return markup
 
 

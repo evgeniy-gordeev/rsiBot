@@ -1,12 +1,13 @@
 import os
+import datetime
 
 import telebot
 from telebot import types
 import time
 import json
 from dotenv import load_dotenv
-
-load_dotenv()
+import pandas as pd
+from sqlalchemy import create_engine, text
 
 from utils import (
     read_config,
@@ -18,15 +19,15 @@ from stocks import BinanceStock, BybitStock, KucoinStock
 import pprint
 
 
-# bot KEY
-# bot_key = "7473391752:AAGAs30m3u_opiNbzJVvE-OhOGYRBmRm4Zg"
-bot_key = os.environ["BOT_KEY"]
+load_dotenv()
 
-# клиент KuCoin
-# client = Trade(key=api_key, secret=api_secret, passphrase=api_passphrase)
+engine = create_engine(f"postgresql+psycopg2://{os.environ['SQL_USER']}:{os.environ['SQL_PASS']}@{os.environ['SQL_HOST']}/{os.environ['SQL_DATABASE']}")
+conn = engine.raw_connection()
+cur = conn.cursor()
+
+bot_key = os.environ["BOT_KEY"]
+prices = [types.LabeledPrice(label='Подписка на 1 месяц', amount=1)]
 bot = telebot.TeleBot(token=bot_key)
-# bot.enable_save_next_step_handlers(delay=2)
-# bot.load_next_step_handlers()
 
 # параметры расчета RSI
 CONFIG_FILE = "config.json"
@@ -46,9 +47,19 @@ client = None
 
 @bot.message_handler(commands=["start"])
 def handle_start(message):
-    text_to_print = "Выберите биржу"
-    markup = create_stock_choose()
-    bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+    user_id = message.from_user.id
+    if not is_active_user(user_id):
+        text_to_print = "У вас нет активной подписки"
+        markup = types.InlineKeyboardMarkup()
+        itembtn_str = types.InlineKeyboardButton(
+            "Оплатить подписку", callback_data="buy"
+        )
+        markup.add(itembtn_str)
+        bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+    else:
+        text_to_print = "Выберите биржу"
+        markup = create_stock_choose()
+        bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
 
 
 @bot.callback_query_handler(lambda query: query.data in ["back", "choose_stock"])
@@ -64,7 +75,7 @@ def back_button_logic(query):
 
 
 @bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
-def handle_start_trading(query):
+def handle_start_trading_stock(query):
     global client
     args = [bot, query.from_user.id, handle_start, config_data]
     if query.data == "binance":
@@ -86,6 +97,121 @@ def handle_menu(query):
         message_id=query.message.id,
         reply_markup=markup,
     )
+
+
+@bot.callback_query_handler(lambda query: query.data in ["buy"])
+def handle_buy(query):
+    bot.send_invoice(
+        chat_id=query.from_user.id, 
+        title='Подписка на 1 месяц', 
+        description='Подписка на бот на 1 месяц',
+        invoice_payload='subs 1 month',
+        currency='XTR',
+        prices=prices,
+        provider_token=None,
+    )
+
+
+@bot.pre_checkout_query_handler(func=lambda query: True)
+def checkout(pre_checkout_query):
+    bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True,
+                                  error_message="Произошла ошибка.")
+
+
+@bot.message_handler(content_types=['successful_payment'])
+def got_payment(message):
+
+    response = "Вы оплатили подписку ✅"
+    bot.send_message(
+        chat_id=message.chat.id,
+        text=response,
+    )
+
+    user_id = message.from_user.id
+    if not is_active_user(user_id):
+        with engine.begin() as connection:
+            connection.execute(text(f'DELETE FROM subs WHERE subs_id = {user_id}'))
+            connection.commit()
+
+        with engine.begin() as connection:
+            start = datetime.datetime.now()
+            end = start + datetime.timedelta(days=30)
+            parameters = {
+                "subs_id": user_id,
+                "date_start": start.strftime("%Y-%m-%d %H:%M:%S"),
+                "date_end": end.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            connection.execute(text('INSERT INTO subs (subs_id, date_start, date_end) VALUES (:subs_id, :date_start, :date_end)'), parameters)
+            connection.commit()
+    else:
+        update_query = f"""
+            UPDATE subs 
+            SET date_end = date_end + INTERVAL'30 days'
+            WHERE subs_id = {user_id}
+        """
+        cur.execute(update_query)
+        conn.commit()
+    
+    query = f"""
+        SELECT * 
+          FROM subs 
+         WHERE subs_id = {user_id}
+    """
+    df = pd.read_sql_query(query, conn)
+    end_time = df['date_end'][0]
+
+    response += '\n' + f'Ваша подписка закончится `{end_time}`'
+    markup = types.InlineKeyboardMarkup()
+    itembtn_str = types.InlineKeyboardButton("Главное меню", callback_data="menu")
+    markup.add(itembtn_str)
+
+    bot.send_message(
+        chat_id=message.chat.id,
+        text=response,
+        reply_markup=markup,
+        parse_mode="Markdown",
+    )
+
+
+@bot.callback_query_handler(lambda query: query.data in ["subscription_status"])
+def handle_subscription_status(query):
+    user_id = query.from_user.id
+    if not is_active_user(user_id):
+        response = "У вас нет активной подписки"
+    else:
+        sql_query = f"""
+            SELECT * 
+            FROM subs 
+            WHERE subs_id = {user_id}
+        """
+        df = pd.read_sql_query(sql_query, conn)
+        end_time = df['date_end'][0]
+        response = f'Ваша подписка закончится `{end_time}`'
+    
+    markup = types.InlineKeyboardMarkup()
+    itembtn_str = types.InlineKeyboardButton("Главное меню", callback_data="menu")
+    markup.add(itembtn_str)
+
+    bot.edit_message_text(
+        chat_id=query.from_user.id,
+        text=response,
+        message_id=query.message.id,
+        reply_markup=markup,
+        parse_mode="Markdown",
+        
+    )
+
+
+def is_active_user(user_id):
+    with engine.begin() as conn:
+        query = f"""
+            SELECT * 
+            FROM subs 
+            WHERE subs_id = {user_id}
+                AND date_end > '{datetime.datetime.now()}'
+        """
+        df = pd.read_sql_query(query, conn)
+    return not df.empty
 
 
 # Обработчик нажатия кнопки "Запуск🚀🚀🚀"
