@@ -3,10 +3,10 @@
     "coin": "TONUSDT",
     "leverage": "1",
     "size": 1,
-    "up_border": 70,
-    "short_close_border": 55,
+    "up_border": 70, #ton
+    "short_close_border": 40,
     "low_border": 30,
-    "long_stop_border": 45,
-    "tf": 1,
-    "n_periods": 6
+    "long_stop_border": 60,
+    "tf": 15, #1
+    "n_periods": 14 #6
 }
