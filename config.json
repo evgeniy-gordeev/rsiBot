@@ -1,7 +1,7 @@
 {
     "coin": "TONUSDT",
     "leverage": "1",
-    "size": 5,
+    "size": 1,
     "up_border": 40,
     "short_close_border": 55,
     "low_border": 29,
