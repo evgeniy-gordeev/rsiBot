@@ -108,7 +108,8 @@ def handle_start_trading_stock(query):
             config_data['coin'] = config_data['coin'][:-1]
         client = BybitStock(*args)
     else:
-        config_data['coin'] = config_data['coin'] + "M"
+        if config_data['coin'][-1] != 'M':
+            config_data['coin'] = config_data['coin'] + "M"
         client = KucoinStock(*args)
     client.get_keys(query.message.id)
 
