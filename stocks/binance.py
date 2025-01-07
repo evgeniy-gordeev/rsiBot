@@ -101,13 +101,15 @@ class BinanceStock(BaseStock):
 
         return df["rsi"].tail(1).values[0]
 
-    def start_trading_process(self, chat_id):
+    def start_trading_process(self, chat_id, message):
         if self.is_running:
-            self.bot.send_message(chat_id, "Торговля уже запущена.")
+            msg = self.bot.send_message(chat_id, "Торговля уже запущена.")
+            time.sleep(self.time_sleep)
+            self.bot.delete_message(self.chat_id, msg.message_id)
             return
 
         self.is_running = True
-        self.bot.send_message(chat_id, f"Поиск сделки по {self.config['coin']}")
+        self.bot.edit_message_text(f"Поиск сделки по {self.config['coin']}", chat_id=chat_id, message_id=message.id, reply_markup=message.reply_markup)
         self.open_counter = 0
         self.close_counter = 0
         leverage = int(self.config["leverage"])
@@ -120,7 +122,9 @@ class BinanceStock(BaseStock):
                     positions = self.client.futures_position_information()
                     open_position = isinstance(positions, list) and len(positions) > 0
                 except Exception as e:
-                    self.bot.send_message(chat_id, f"Ошибка получения позиций: {e}")
+                    msg = self.bot.send_message(chat_id, f"Ошибка получения позиций: {e}")
+                    time.sleep(self.time_sleep)
+                    self.bot.delete_message(self.chat_id, msg.message_id)
                     open_position = False
 
                 if open_position:
@@ -156,10 +160,12 @@ class BinanceStock(BaseStock):
                             )
                             self.open_counter += 1
                     except Exception as e:
-                        self.bot.send_message(
+                        msg = self.bot.send_message(
                             chat_id, f"Ошибка при открытии позиции: {e}"
                         )
-                        self.stop_trading_process(chat_id)
+                        time.sleep(self.time_sleep)
+                        self.bot.delete_message(self.chat_id, msg.message_id)
+                        self.stop_trading_process(chat_id, message)
 
                 # Закрытие позиций
                 if open_position:
@@ -193,42 +199,49 @@ class BinanceStock(BaseStock):
                             )
                             self.close_counter += 1
                     except Exception as e:
-                        self.bot.send_message(
+                        msg = self.bot.send_message(
                             chat_id, f"Ошибка при закрытии позиции: {e}"
                         )
-                        self.stop_trading_process(chat_id)
+                        time.sleep(self.time_sleep)
+                        self.bot.delete_message(self.chat_id, msg.message_id)
+                        self.stop_trading_process(chat_id, message)
 
-                # Отправка обновления статуса
-                status_message = (
-                    f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
-                    f"RSI: {round(current_rsi, 2)}\n"
-                    f"Открытых сделок: {self.open_counter}\n"
-                    f"Закрытых сделок: {self.close_counter}"
-                )
+                if self.is_running:
+                    # Отправка обновления статуса
+                    status_message = (
+                        f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
+                        f"RSI: {round(current_rsi, 2)}\n"
+                        f"Открытых сделок: {self.open_counter}\n"
+                        f"Закрытых сделок: {self.close_counter}"
+                    )
 
-                if self.msg_id:
-                    status_msg = self.bot.edit_message_text(
+                    reply_markup = message.reply_markup
+                    # for row in reply_markup.keyboard:
+                    #     for i, elem in enumerate(row):
+                    #         if elem.callback_data == 'start':
+                    #             elem.text = status_message
+                    #             # row[i] = elem
+                    self.bot.edit_message_text(
                         chat_id=chat_id,
                         text=status_message,
-                        message_id=self.msg_id,
+                        message_id=message.id,
+                        reply_markup=reply_markup,
                         parse_mode="Markdown",
                     )
-                else:
-                    status_msg = self.bot.send_message(
-                        chat_id, status_message, parse_mode="Markdown"
-                    )
-                    self.msg_id = status_msg.id
 
-                time.sleep(self.time_sleep)
+                    time.sleep(self.time_sleep)
         except Exception as e:
-            self.bot.send_message(chat_id, f"Произошла ошибка в торговом цикле: {e}")
+            msg = self.bot.send_message(chat_id, f"Произошла ошибка в торговом цикле: {e}")
+            time.sleep(self.time_sleep)
+            self.bot.delete_message(self.chat_id, msg.message_id)
             self.is_running = False
 
     # Функция для остановки процесса торговли
-    def stop_trading_process(self, chat_id):
-
+    def stop_trading_process(self, chat_id, message):
         if not self.is_running:
-            self.bot.send_message(chat_id, "Торговля уже остановлена.")
+            msg = self.bot.send_message(chat_id, "Торговля уже остановлена.")
+            time.sleep(self.time_sleep)
+            self.bot.delete_message(self.chat_id, msg.message_id)
             return
 
         self.is_running = False
@@ -252,8 +265,8 @@ class BinanceStock(BaseStock):
                         type="MARKET",
                         quantity=self.config["size"],
                     )
-                    self.bot.send_message(
-                        chat_id, f"Закрыта длинная позиция по {self.config['coin']}"
+                    self.bot.edit_message_text(f"Закрыта длинная позиция по {self.config['coin']}",
+                        chat_id, message_id=message.id, reply_markup=message.reply_markup
                     )
                 elif float(position["positionAmt"]) < 0:
                     self.client.futures_change_leverage(
@@ -265,25 +278,35 @@ class BinanceStock(BaseStock):
                         type="MARKET",
                         quantity=self.config["size"],
                     )
-                    self.bot.send_message(
-                        chat_id, f"Закрыта короткая позиция по {self.config['coin']}"
+                    self.bot.edit_message_text(f"Закрыта короткая позиция по {self.config['coin']}",
+                        chat_id, message_id=message.id, reply_markup=message.reply_markup
                     )
 
-            self.bot.send_message(
-                chat_id, f"--Робот остановлен. Все позиции закрыты.--\n"
-            )
+            self.bot.edit_message_text(message.text + '\n--Робот остановлен. Все позиции закрыты.-- \n',
+                    chat_id, message_id=message.id, reply_markup=message.reply_markup
+                )
         except Exception as e:
-            self.bot.send_message(chat_id, f"Ошибка при закрытии позиций: {e}")
+            msg = self.bot.send_message(chat_id, f"Ошибка при закрытии позиций: {e}")
+            time.sleep(self.time_sleep)
+            self.bot.delete_message(self.chat_id, msg.message_id)
 
         # Вычисление PnL
         try:
             rev = self.calculate_24h_pnl()
             if rev >= 0:
-                self.bot.send_message(chat_id, f"Ваш профит составил {rev} USDT")
+                text_to_add = f"\nВаш профит составил {rev} USDT"
             else:
-                self.bot.send_message(chat_id, f"Ваш убыток составил {rev} USDT")
+                text_to_add = f"\nВаш убыток составил {rev} USDT"
+
+            self.bot.edit_message_text(message.text + '\n--Робот остановлен. Все позиции закрыты.--' + text_to_add,
+                    chat_id, message_id=message.id, reply_markup=message.reply_markup
+                )
+            
         except Exception as e:
-            self.bot.send_message(chat_id, f"Ошибка при вычислении PnL: {e}")
+            msg = self.bot.send_message(chat_id, f"Ошибка при вычислении PnL: {e}")
+            time.sleep(self.time_sleep)
+            self.bot.delete_message(self.chat_id, msg.message_id)
+
 
     # Функия показывающая текущую позицию
     def current_position(self):

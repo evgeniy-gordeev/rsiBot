@@ -28,6 +28,7 @@ class BaseStock:
             "[■■■■■■■■■□]",
             "[■■■■■■■■■■]",
         ]
+        self.time_wait = 7
 
     def main_menu(self, message_id):
         markup = create_main_menu_markup()
@@ -39,10 +40,10 @@ class BaseStock:
             reply_markup=markup,
         )
 
-    def start_trading_process(self, chat_id):
+    def start_trading_process(self, chat_id, message):
         pass
 
-    def stop_trading_process(self, chat_id):
+    def stop_trading_process(self, chat_id, message):
         pass
 
     def get_all_position(self):
