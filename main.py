@@ -58,11 +58,20 @@ def handle_start(message):
     if not is_active_user(user_id):
         text_to_print = "У вас нет активной подписки"
         markup = types.InlineKeyboardMarkup()
+        itembtn_str0 = types.InlineKeyboardButton(
+            "О сервисе", url='https://glens-organization-1.gitbook.io/rsioboarding/about'
+        )
+        markup.add(itembtn_str0)        
         itembtn_str = types.InlineKeyboardButton(
             "Оплатить подписку", callback_data="buy"
         )
         markup.add(itembtn_str)
-        bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+        #bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+        bot.send_audio(
+            message.chat.id, 
+            audio=open('Послушай.mp3', 'rb'), 
+            caption="У вас нет активной подписки\nНачни с голосового сообщения :)",
+            reply_markup=markup)
     else:
         text_to_print = "Главное меню"
         markup = create_main_menu_markup()
