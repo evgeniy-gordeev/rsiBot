@@ -59,13 +59,21 @@ def handle_start(message):
         text_to_print = "У вас нет активной подписки"
         markup = types.InlineKeyboardMarkup()
         itembtn_str0 = types.InlineKeyboardButton(
-            "О сервисе", url='https://glens-organization-1.gitbook.io/rsioboarding/about'
+            "О СЕРВИСЕ", url='https://glens-organization-1.gitbook.io/rsioboarding/about'
         )
-        markup.add(itembtn_str0)        
+        markup.add(itembtn_str0)  
+        itembtn_str1 = types.InlineKeyboardButton(
+            "ЧТО ТЫ ПОЛУЧИШЬ?", url='https://glens-organization-1.gitbook.io/rsioboarding/benefits'
+        )
+        markup.add(itembtn_str1)        
         itembtn_str = types.InlineKeyboardButton(
             "Оплатить подписку", callback_data="buy"
         )
         markup.add(itembtn_str)
+        itembtn_str_ = types.InlineKeyboardButton(
+            "ПОДДЕРЖКА 🧑‍💻", url = "t.me/@gordeevlabs"
+        )
+        markup.add(itembtn_str_)        
         #bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
         bot.send_audio(
             message.chat.id, 
