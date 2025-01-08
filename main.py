@@ -66,7 +66,7 @@ def handle_start(message):
             "Оплатить подписку", callback_data="buy"
         )
         markup.add(itembtn_str)
-        bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+        #bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
         bot.send_audio(
             message.chat.id, 
             audio=open('Послушай.mp3', 'rb'), 
