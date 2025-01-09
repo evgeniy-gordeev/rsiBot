@@ -61,16 +61,19 @@ def create_main_menu_markup():
     itembtn_str12 = types.InlineKeyboardButton(
         "О СЕРВИСЕ", url='https://glens-organization-1.gitbook.io/rsioboarding/quickstart'
     )
-    itembtn_str_ = types.InlineKeyboardButton(
-        "TECH SUPPORT 🧑‍💻", url = "t.me/@gordeevlabs"
-    )
-    markup.add(itembtn_str_)
+    # itembtn_str_ = types.InlineKeyboardButton(
+    #     "TECH SUPPORT 🧑‍💻", url = "t.me/@gordeevlabs"
+    # )
+    # markup.add(itembtn_str_)
     itembtn_str__ = types.InlineKeyboardButton(
         "НОВОСТИ", url = "t.me/@tradestartegies700"
     )
     itembtn_str___ = types.InlineKeyboardButton(
         "ОТЗЫВЫ", url = "t.me/@vacuum_feedback"
-    )                     
+    )
+    itembtn_str____ = types.InlineKeyboardButton(
+        "БАГИ 🐞", url = "t.me/@@vacuum_issues"
+    )                                   
     markup.add(itembtn_str7,itembtn_str10,itembtn_str11)
     markup.add(itembtn_str0)
     markup.add(itembtn_str1, itembtn_str2)
@@ -78,9 +81,10 @@ def create_main_menu_markup():
     markup.add(itembtn_str5, itembtn_str6)
     markup.add(itembtn_str8)
     markup.add(itembtn_str12)
-    markup.add(itembtn_str_)
+    #markup.add(itembtn_str_)
     markup.add(itembtn_str__)
-    markup.add(itembtn_str___)      
+    markup.add(itembtn_str___)
+    markup.add(itembtn_str____)      
     return markup
 
 
