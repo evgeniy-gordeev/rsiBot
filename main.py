@@ -54,36 +54,36 @@ coin_mapping = {
 
 @bot.message_handler(commands=["start"])
 def handle_start(message):
-    user_id = message.from_user.id
-    if not is_active_user(user_id):
-        text_to_print = "У вас нет активной подписки"
-        markup = types.InlineKeyboardMarkup()
-        itembtn_str0 = types.InlineKeyboardButton(
-            "О СЕРВИСЕ", url='https://glens-organization-1.gitbook.io/rsioboarding/about'
-        )
-        markup.add(itembtn_str0)  
-        itembtn_str1 = types.InlineKeyboardButton(
-            "ЧТО ТЫ ПОЛУЧИШЬ?", url='https://glens-organization-1.gitbook.io/rsioboarding/benefits'
-        )
-        markup.add(itembtn_str1)        
-        itembtn_str = types.InlineKeyboardButton(
-            "Оплатить подписку", callback_data="buy"
-        )
-        markup.add(itembtn_str)
-        itembtn_str_ = types.InlineKeyboardButton(
-            "ПОДДЕРЖКА 🧑‍💻", url = "t.me/@gordeevlabs"
-        )
-        markup.add(itembtn_str_)        
-        #bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
-        bot.send_audio(
-            message.chat.id, 
-            audio=open('Послушай.mp3', 'rb'), 
-            caption="У вас нет активной подписки\nНачни с голосового сообщения :)",
-            reply_markup=markup)
-    else:
-        text_to_print = "Главное меню"
-        markup = create_main_menu_markup()
-        bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+    # user_id = message.from_user.id
+    # if not is_active_user(user_id):
+    #     text_to_print = "У вас нет активной подписки"
+    #     markup = types.InlineKeyboardMarkup()
+    #     itembtn_str0 = types.InlineKeyboardButton(
+    #         "О СЕРВИСЕ", url='https://glens-organization-1.gitbook.io/rsioboarding/about'
+    #     )
+    #     markup.add(itembtn_str0)  
+    #     itembtn_str1 = types.InlineKeyboardButton(
+    #         "ЧТО ТЫ ПОЛУЧИШЬ?", url='https://glens-organization-1.gitbook.io/rsioboarding/benefits'
+    #     )
+    #     markup.add(itembtn_str1)        
+    #     itembtn_str = types.InlineKeyboardButton(
+    #         "Оплатить подписку", callback_data="buy"
+    #     )
+    #     markup.add(itembtn_str)
+    #     itembtn_str_ = types.InlineKeyboardButton(
+    #         "ПОДДЕРЖКА 🧑‍💻", url = "t.me/@gordeevlabs"
+    #     )
+    #     markup.add(itembtn_str_)        
+    #     #bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
+    #     bot.send_audio(
+    #         message.chat.id, 
+    #         audio=open('Послушай.mp3', 'rb'), 
+    #         caption="У вас нет активной подписки\nНачни с голосового сообщения :)",
+    #         reply_markup=markup)
+    # else:
+    text_to_print = "Главное меню"
+    markup = create_main_menu_markup()
+    bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
 
 
 @bot.callback_query_handler(lambda query: query.data in ["back", "choose_stock"])
