@@ -27,7 +27,7 @@ engine = create_engine(f"postgresql+psycopg2://{os.environ['SQL_USER']}:{os.envi
 # cur = conn.cursor()
 
 bot_key = os.environ["BOT_KEY"]
-prices = [types.LabeledPrice(label='Подписка на 1 месяц', amount=150)]
+prices = [types.LabeledPrice(label='Поддержать проект', amount=150)]
 bot = telebot.TeleBot(token=bot_key)
 
 # параметры расчета RSI
@@ -147,8 +147,8 @@ def handle_menu(query):
 def handle_buy(query):
     bot.send_invoice(
         chat_id=query.from_user.id, 
-        title='Подписка на 1 месяц', 
-        description='Подписка на бот на 1 месяц',
+        title='Поддержать проект', 
+        description='Поддержать проект бота',
         invoice_payload='subs 1 month',
         currency='XTR',
         prices=prices,

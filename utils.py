@@ -47,7 +47,7 @@ def create_main_menu_markup():
         "Выбрать биржу", callback_data="choose_stock"
     )
     itembtn_str8 = types.InlineKeyboardButton(
-        "Оплатить подписку", callback_data="buy"
+        "Поддержать проект", callback_data="buy"
     )
     itembtn_str9 = types.InlineKeyboardButton(
         "Статус подписки", callback_data="subscription_status"
@@ -57,13 +57,17 @@ def create_main_menu_markup():
     )
     itembtn_str11 = types.InlineKeyboardButton(
         "Выбрать size", callback_data="choose_size"
-    )     
+    )
+    itembtn_str12 = types.InlineKeyboardButton(
+        "О СЕРВИСЕ", url='https://glens-organization-1.gitbook.io/rsioboarding/quickstart'
+    )         
     markup.add(itembtn_str7,itembtn_str10,itembtn_str11)
     markup.add(itembtn_str0)
     markup.add(itembtn_str1, itembtn_str2)
     markup.add(itembtn_str3)
     markup.add(itembtn_str5, itembtn_str6)
-    markup.add(itembtn_str8, itembtn_str9)
+    markup.add(itembtn_str8)
+    markup.add(itembtn_str12)
     return markup
 
 
