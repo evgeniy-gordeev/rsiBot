@@ -72,7 +72,7 @@ def create_main_menu_markup():
         "ОТЗЫВЫ", url = "t.me/@vacuum_feedback"
     )
     itembtn_str____ = types.InlineKeyboardButton(
-        "БАГИ 🐞", url = "t.me/@@vacuum_issues"
+        "БАГИ 🐞", url = "t.me/@vacuum_issues"
     )                                   
     markup.add(itembtn_str7,itembtn_str10,itembtn_str11)
     markup.add(itembtn_str0)
