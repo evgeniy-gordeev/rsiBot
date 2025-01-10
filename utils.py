@@ -80,11 +80,11 @@ def create_main_menu_markup():
     markup.add(itembtn_str3)
     markup.add(itembtn_str5, itembtn_str6)
     markup.add(itembtn_str8)
-    markup.add(itembtn_str12)
+    markup.add(itembtn_str12, itembtn_str__)
     #markup.add(itembtn_str_)
-    markup.add(itembtn_str__)
-    markup.add(itembtn_str___)
-    markup.add(itembtn_str____)      
+    #markup.add(itembtn_str__)
+    markup.add(itembtn_str___, itembtn_str____)
+    #markup.add(itembtn_str____)      
     return markup
 
 
