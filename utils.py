@@ -69,7 +69,7 @@ def create_main_menu_markup():
         "НОВОСТИ", url = "t.me/@tradestartegies700"
     )
     itembtn_str___ = types.InlineKeyboardButton(
-        "ОТЗЫВЫ", url = "t.me/@@vacuum_feedbacks"
+        "ОТЗЫВЫ", url = "t.me/@vacuum_feedbacks"
     )
     
     itembtn_str____ = types.InlineKeyboardButton(
