@@ -216,11 +216,21 @@ class BybitStock(BaseStock):
                         self.stop_trading_process(chat_id, message)
 
                 # Отправка обновления статуса
+                ticker = self.client.get_tickers(category="linear",symbol=self.config["coin"])
+                current_price = float(ticker['result']['list'][0]['lastPrice'])
+                response = self.client.get_wallet_balance(accountType="UNIFIED")
+                coins = response['result']['list'][0]['coin']
+                usdt_balance = next((item for item in coins if item['coin'] == 'USDT'), None)
+                usdt_trading_balance = self.config['size']*current_price
+                deposit =  usdt_trading_balance if float(usdt_balance['usdValue']) >= usdt_trading_balance else 0
+
                 status_message = (
                     f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
-                    f"RSI: {round(current_rsi, 2)}\n"
+                    f"RSI: {round(current_rsi, 2)}\n"                        
                     f"Открытых сделок: {self.open_counter}\n"
-                    f"Закрытых сделок: {self.close_counter}"
+                    f"Закрытых сделок: {self.close_counter}\n\n"
+                    f"Deposit: {deposit}\n"
+                    f"PnL: {self.calculate_24h_pnl()}"
                 )
 
                 reply_markup = message.reply_markup

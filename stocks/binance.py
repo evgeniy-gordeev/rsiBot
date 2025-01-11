@@ -208,11 +208,20 @@ class BinanceStock(BaseStock):
 
                 if self.is_running:
                     # Отправка обновления статуса
+                    ticker = self.client.futures_symbol_ticker(symbol=self.config["coin"])
+                    current_price = float(ticker['price'])
+                    balances = self.client.futures_account_balance()
+                    usdt_balance = next((item for item in balances if item['asset'] == 'USDT'), None)
+                    usdt_trading_balance = self.config['size']*current_price
+                    deposit = usdt_trading_balance if float(usdt_balance['balance']) >= usdt_trading_balance else 0
+
                     status_message = (
                         f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
-                        f"RSI: {round(current_rsi, 2)}\n"
+                        f"RSI: {round(current_rsi, 2)}\n"                        
                         f"Открытых сделок: {self.open_counter}\n"
-                        f"Закрытых сделок: {self.close_counter}"
+                        f"Закрытых сделок: {self.close_counter}\n\n"
+                        f"Deposit: {deposit}\n"
+                        f"PnL: {self.calculate_24h_pnl()}"
                     )
 
                     reply_markup = message.reply_markup
@@ -331,3 +340,19 @@ class BinanceStock(BaseStock):
         else:
             total_pnl = 0
         return total_pnl
+    
+    def calculate_deposit(self):
+        now = int(datetime.now().timestamp() * 1000)
+        now_24h_ago = int((datetime.now().timestamp() - 24 * 60 * 60) * 1000)
+
+        res = self.client.futures_account_trades(
+            symbol=self.config["coin"], startTime=now_24h_ago, endTime=now
+        )
+        res = pd.json_normalize(res)
+
+        if "realizedPnl" in res.columns:
+            res["realizedPnl"] = res["realizedPnl"].astype(float)
+            total_pnl = float(res["realizedPnl"].sum())
+        else:
+            total_pnl = 0
+        return total_pnl    

@@ -32,7 +32,7 @@ def write_config(data):
 
 def create_main_menu_markup():
     markup = types.InlineKeyboardMarkup()
-    itembtn_str0 = types.InlineKeyboardButton("Запуск клиента", callback_data="init_client")
+    itembtn_str0 = types.InlineKeyboardButton("Авторизоваться", callback_data="init_client")
     itembtn_str1 = types.InlineKeyboardButton("Запуск🚀🚀🚀", callback_data="start")
     itembtn_str2 = types.InlineKeyboardButton("STOP❌❌❌", callback_data="stop")
     itembtn_str3 = types.InlineKeyboardButton(
@@ -56,7 +56,7 @@ def create_main_menu_markup():
         "Выбрать пару", callback_data="choose_pair"
     )
     itembtn_str11 = types.InlineKeyboardButton(
-        "Выбрать size", callback_data="choose_size"
+        "Задать деп", callback_data="choose_size"
     )
     itembtn_str12 = types.InlineKeyboardButton(
         "О СЕРВИСЕ", url='https://glens-organization-1.gitbook.io/rsioboarding/quickstart'
@@ -74,13 +74,17 @@ def create_main_menu_markup():
     
     itembtn_str____ = types.InlineKeyboardButton(
         "БАГИ 🐞", url = "t.me/@vacuum_issues"
-    )                                   
-    markup.add(itembtn_str7,itembtn_str10,itembtn_str11)
+    )
+    itembtn_str_____ = types.InlineKeyboardButton(
+        "ACCELERATE x2 🐞", callback_data='accelerate'
+    )                                         
+    #markup.add(itembtn_str7,itembtn_str10)
+    markup.add(itembtn_str11, itembtn_str_____)
     markup.add(itembtn_str0)
     markup.add(itembtn_str1, itembtn_str2)
     markup.add(itembtn_str3)
-    markup.add(itembtn_str5, itembtn_str6)
-    markup.add(itembtn_str8)
+    # markup.add(itembtn_str5, itembtn_str6)
+    # markup.add(itembtn_str8)
     markup.add(itembtn_str12, itembtn_str__)
     #markup.add(itembtn_str_)
     #markup.add(itembtn_str__)

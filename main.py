@@ -52,6 +52,22 @@ coin_mapping = {
 }
 
 
+
+@bot.message_handler(commands=["setdeposit"])
+def handle_start(message):
+    deposit = message.text
+    global config_data
+    config_data['size'] = deposit
+    write_config(config_data)
+
+
+@bot.message_handler(commands=["accelerate"])
+def handle_start(message):
+    global config_data
+    config_data['leverage'] = 2
+    write_config(config_data)    
+
+
 @bot.message_handler(commands=["start"])
 def handle_start(message):
     # user_id = message.from_user.id
@@ -154,6 +170,12 @@ def handle_buy(query):
         prices=prices,
         provider_token=None,
     )
+
+@bot.callback_query_handler(lambda query: query.data in ["accelerate"])
+def handle_accel(query):
+    lev = int(config_data['leverage'])
+    config_data['leverage'] = lev*2
+    write_config(config_data)
 
 
 @bot.pre_checkout_query_handler(func=lambda query: True)

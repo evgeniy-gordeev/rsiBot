@@ -1,7 +1,7 @@
 {
-    "stock": "binance",
-    "coin": "TONUSDT",
-    "leverage": "1",
+    "stock": "kucoin",
+    "coin": "TONUSDTM",
+    "leverage": 64,
     "size": 1,
     "up_border": 70,
     "short_close_border": 40,

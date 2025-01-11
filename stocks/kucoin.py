@@ -2,7 +2,7 @@ import time
 from datetime import datetime
 import pdb
 
-from kucoin_futures.client import Trade, Market
+from kucoin_futures.client import Trade, Market, User
 from telebot import types
 import pandas as pd
 import numpy as np
@@ -15,6 +15,7 @@ class KucoinStock(BaseStock):
         super().__init__(*args, **kwargs)
         self.client: Trade
         self.market: Market
+        self.user: User
 
     def get_keys(self, message_id, prefix_text=""):
         text = "\n".join(
@@ -59,6 +60,12 @@ class KucoinStock(BaseStock):
             secret=self.api_secret,
             passphrase=self.api_passphrase,
         )
+
+        self.user = User(
+            key=self.api_key,
+            secret=self.api_secret,
+            passphrase=self.api_passphrase,
+        )        
 
     def check_client(self, message_id):
         for i in range(len(self.animation)):
@@ -206,11 +213,17 @@ class KucoinStock(BaseStock):
                         self.stop_trading_process(chat_id, message)
 
                 # Отправка обновления статуса
+                current_price = self.market.get_current_mark_price(symbol=self.config["coin"])['value']
+                usdt_balance = self.user.get_account_overview(currency='USDT')['accountEquity']
+                deposit = self.config['size']*current_price * int(self.config['leverage'])
+                #deposit = usdt_trading_balance if float(usdt_balance) >= usdt_trading_balance else 0                
                 status_message = (
                     f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
-                    f"RSI: {round(current_rsi, 2)}\n"
+                    f"RSI: {round(current_rsi, 2)}\n"                        
                     f"Открытых сделок: {self.open_counter}\n"
-                    f"Закрытых сделок: {self.close_counter}"
+                    f"Закрытых сделок: {self.close_counter}\n\n"
+                    f"Deposit: {deposit}\n"
+                    f"PnL: {self.calculate_24h_pnl()}"
                 )
 
                 reply_markup = message.reply_markup
@@ -302,7 +315,6 @@ class KucoinStock(BaseStock):
     # Функия показывающая прибыль
     def calculate_24h_pnl(self):
         res = self.client.get_24h_done_order()
-        print(res)
         if not isinstance(res, list):
             return 0
         res = pd.json_normalize(res)
