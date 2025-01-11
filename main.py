@@ -53,19 +53,24 @@ coin_mapping = {
 
 
 
-@bot.message_handler(commands=["setdeposit"])
-def handle_start(message):
-    deposit = message.text
-    global config_data
-    config_data['size'] = deposit
+@bot.callback_query_handler(lambda query: query.data in ["HFT"])
+def handle_accel(query):
+    config_data['tf'] = 1
+    config_data['n_periods'] = 6
     write_config(config_data)
 
+@bot.callback_query_handler(lambda query: query.data in ["MFT"])
+def handle_accel(query):
+    config_data['tf'] = 5
+    config_data['n_periods'] = 12
+    write_config(config_data)   
 
-@bot.message_handler(commands=["accelerate"])
-def handle_start(message):
-    global config_data
-    config_data['leverage'] = 2
-    write_config(config_data)    
+@bot.callback_query_handler(lambda query: query.data in ["LFT"])
+def handle_accel(query):
+    config_data['tf'] = 15
+    config_data['n_periods'] = 14
+    write_config(config_data)        
+
 
 
 @bot.message_handler(commands=["start"])
@@ -97,8 +102,11 @@ def handle_start(message):
     #         caption="У вас нет активной подписки\nНачни с голосового сообщения :)",
     #         reply_markup=markup)
     # else:
-    text_to_print = "Главное меню"
-    markup = create_main_menu_markup()
+    text_to_print = "Log In"
+    markup = types.InlineKeyboardMarkup()
+    itembtn_str0 = types.InlineKeyboardButton("Авторизоваться на bybit", callback_data="init_client")
+    markup.add(itembtn_str0)
+    #markup = create_main_menu_markup()
     bot.send_message(message.chat.id, text=text_to_print, reply_markup=markup)
 
 
@@ -176,6 +184,13 @@ def handle_accel(query):
     lev = int(config_data['leverage'])
     config_data['leverage'] = lev*2
     write_config(config_data)
+
+@bot.callback_query_handler(lambda query: query.data in ["downgrade"])
+def handle_accel(query):
+    lev = int(config_data['leverage'])
+    new_lev = int(lev/2) if lev > 1 else 1
+    config_data['leverage'] = new_lev
+    write_config(config_data)    
 
 
 @bot.pre_checkout_query_handler(func=lambda query: True)
@@ -277,11 +292,13 @@ def is_active_user(user_id):
     return not df.empty
 
 
+
+
 # Обработчик нажатия кнопки "Запуск🚀🚀🚀"
 @bot.message_handler(func=lambda message: message.text == "Запуск🚀🚀🚀")
 def handle_start_trading(message):
     if client:
-        client.start_trading_process(message.chat.id)
+        client.start_trading_process(message.chat.id, message)
     else:
         markup = main_menu_button()
         bot.edit_message_text("Не указан клиент 🚫", message.chat.id, message.id, reply_markup=markup)
@@ -349,35 +366,32 @@ def handle_start_trading(query):
     )
 
 
-@bot.callback_query_handler(lambda query: query.data in ["back", "choose_size"])
-def back_button_logic3(query):
-    text_to_print = "Выберите размер позиции"
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Введите кол-во USDT", callback_data="enter_usdt"))
-    markup.add(types.InlineKeyboardButton("Введите плечо", callback_data="enter_leverage"))
-    markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
-    bot.edit_message_text(
-        chat_id=query.from_user.id,
-        text=text_to_print,
-        message_id=query.message.id,
-        reply_markup=markup,
-    )
+
+# @bot.callback_query_handler(lambda query: query.data in ["back", "choose_size"])
+# def back_button_logic3(query):
+#     text_to_print = "Выберите размер позиции"
+#     markup = types.InlineKeyboardMarkup()
+#     markup.add(types.InlineKeyboardButton("Введите кол-во USDT", callback_data="enter_usdt"))
+#     markup.add(types.InlineKeyboardButton("Введите плечо", callback_data="enter_leverage"))
+#     markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
+#     bot.edit_message_text(
+#         chat_id=query.from_user.id,
+#         text=text_to_print,
+#         message_id=query.message.id,
+#         reply_markup=markup,
+#     )
+
     
 
-@bot.callback_query_handler(lambda query: query.data in ["enter_usdt", "enter_leverage"])
+@bot.callback_query_handler(lambda query: query.data in ["back", "choose_size"])
 def handle_choose_size(query):
     chat_id = query.from_user.id
     message_id = query.message.id
-    if query.data == "enter_usdt": 
-        text_to_print = f"Введите новое значение для поля size\nТекущее значение {config_data['size']}"
-    else:
-        text_to_print = f"Введите новое значение для поля leverage\nТекущее значение {config_data['leverage']}"
-
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("назад", callback_data="choose_size"))
+    markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
     msg = bot.edit_message_text(
         chat_id=query.from_user.id,
-        text=text_to_print,
+        text="Введите деп",
         message_id=query.message.id,
         reply_markup=markup
     )
@@ -385,17 +399,11 @@ def handle_choose_size(query):
 
 def change_value(msg, chat_id, message_id, query_data):
     bot.delete_message(msg.from_user.id, msg.message_id, timeout=1000)
-    if query_data == "enter_usdt": 
-        config_data['size'] = int(msg.text)
-        if client:
-            client.config = config_data
-        text_to_print = f"Обновленное значение для поля size\nЗначение {config_data['size']}"
-    else:
-        config_data['leverage'] = msg.text
-        if client:
-            client.config = config_data
-        text_to_print = f"Обновленное значение для поля leverage\nЗначение {config_data['leverage']}"
-    text_to_print += '\nДля обновления значения еще раз нажмите кнопку "Назад" и выберете соответствующий параметр'
+    config_data['size'] = int(msg.text)
+    if client:
+        client.config = config_data
+    text_to_print = f"Обновленное значение для поля size\nЗначение {config_data['size']}"
+    #text_to_print += '\nДля обновления значения еще раз нажмите кнопку "Назад" и выберете соответствующий параметр'
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("назад", callback_data="choose_size"))
     msg = bot.edit_message_text(
@@ -429,6 +437,12 @@ def lessgo(query):
         reply_markup=markup,
     )
     # bot.register_next_step_handler(msg,test,msg)
+
+
+
+
+
+
 
 
 @bot.callback_query_handler(lambda query: query.data[:2] == "ch")
@@ -545,6 +559,8 @@ def lessgo(message):
         response += f"{key}: {value}\n"
 
     bot.send_message(message.chat.id, response)
+
+
 
 
 @bot.callback_query_handler(lambda query: query.data == "pos")

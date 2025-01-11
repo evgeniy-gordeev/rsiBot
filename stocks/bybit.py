@@ -99,6 +99,7 @@ class BybitStock(BaseStock):
         df["rsi"] = 100 - 100 / (1 + df["rs"])
         return df["rsi"].tail(1).values[0]
 
+    # Функция для старта процесса торговли
     def start_trading_process(self, chat_id, message):
         if self.is_running:
             msg = self.bot.send_message(chat_id, "Торговля уже запущена.")
@@ -107,10 +108,10 @@ class BybitStock(BaseStock):
             return
 
         self.is_running = True
-        self.bot.edit_message_text(f"Поиск сделки по {self.config['coin']}", chat_id=chat_id, message_id=message.id, reply_markup=message.reply_markup)
-        self.open_counter = 0
-        self.close_counter = 0
-        self.msg_id = None
+        self.config['size']=1
+        self.config['leverage']=1
+        print(self.is_running)
+        #self.bot.edit_message_text(f"Поиск сделки по {self.config['coin']}", chat_id=chat_id, message_id=message.id, reply_markup=message.reply_markup)
 
         try:
             self.client.set_leverage(
@@ -221,25 +222,37 @@ class BybitStock(BaseStock):
                 response = self.client.get_wallet_balance(accountType="UNIFIED")
                 coins = response['result']['list'][0]['coin']
                 usdt_balance = next((item for item in coins if item['coin'] == 'USDT'), None)
-                usdt_trading_balance = self.config['size']*current_price
-                deposit =  usdt_trading_balance if float(usdt_balance['usdValue']) >= usdt_trading_balance else 0
+                self.deposit = self.config['size']*current_price * self.config['leverage']
+                #self.deposit=  usdt_trading_balance if float(usdt_balance['usdValue']) >= usdt_trading_balance else 0
+                #self.deposit = 10
+                pos = self.client.get_positions(
+                    category="linear", symbol=self.config['coin'])['result']['list'][0]['unrealisedPnl']
+                if len(pos) > 0:
+                    pnl = float(pos)
+                else:
+                    pnl = 0
+                self.session_pnl += pnl
 
                 status_message = (
+                    f"stock: {self.config['stock']}\n"
+                    f"coin: {self.config['coin']}\n"
+                    f"lev: {self.config['leverage']}\n"
+                    f"size: {self.config['size']}\n\n"
+
                     f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
                     f"RSI: {round(current_rsi, 2)}\n"                        
                     f"Открытых сделок: {self.open_counter}\n"
                     f"Закрытых сделок: {self.close_counter}\n\n"
-                    f"Deposit: {deposit}\n"
-                    f"PnL: {self.calculate_24h_pnl()}"
+                    f"Deposit: {self.deposit}\n"
+                    f"PnL: {round(self.session_pnl,4)}\n"
+                    #f"24h PnL: {self.calculate_24h_pnl()}"
                 )
-
-                reply_markup = message.reply_markup
 
                 self.bot.edit_message_text(
                     chat_id=chat_id,
                     text=status_message,
                     message_id=message.id,
-                    reply_markup=reply_markup,
+                    reply_markup=message.reply_markup,
                     parse_mode="Markdown",
                 )
 
@@ -308,9 +321,17 @@ class BybitStock(BaseStock):
                         chat_id, message_id=message.id, reply_markup=message.reply_markup
                     )
 
-            self.bot.edit_message_text(message.text + '\n--Робот остановлен. Все позиции закрыты.-- \n',
-                    chat_id, message_id=message.id, reply_markup=message.reply_markup
-                )
+
+            status_message = (
+                f"Робот остановлен. Все позиции закрыты."
+            )        
+            self.bot.edit_message_text(
+                chat_id=chat_id,
+                text=status_message,
+                message_id=message.id,
+                reply_markup=message.reply_markup,
+                parse_mode="Markdown",
+            )
         except Exception as e:
             msg = self.bot.send_message(chat_id, f"Ошибка при закрытии позиций: {e}")
             time.sleep(self.time_sleep)
@@ -324,9 +345,9 @@ class BybitStock(BaseStock):
             else:
                 text_to_add = f"\nВаш убыток составил {rev} USDT"
 
-            self.bot.edit_message_text(message.text + text_to_add,
-                    chat_id, message_id=message.id, reply_markup=message.reply_markup
-                )
+            # self.bot.edit_message_text(message.text + text_to_add,
+            #         chat_id, message_id=message.id, reply_markup=message.reply_markup
+            #     )
             
         except Exception as e:
             msg = self.bot.send_message(chat_id, f"Ошибка при вычислении PnL: {e}")

@@ -1,12 +1,12 @@
 {
-    "stock": "kucoin",
-    "coin": "TONUSDTM",
-    "leverage": 64,
+    "stock": "bybit",
+    "coin": "TONUSDT",
+    "leverage": 1,
     "size": 1,
     "up_border": 70,
     "short_close_border": 40,
     "low_border": 30,
     "long_stop_border": 60,
-    "tf": 15,
-    "n_periods": 14
+    "tf": 1,
+    "n_periods": 6
 }

@@ -4,7 +4,7 @@ from utils import create_main_menu_markup, back_menu_button
 
 
 class BaseStock:
-    time_sleep = 5
+    time_sleep = 1
     is_running = False
     open_counter = 0
     close_counter = 0
@@ -16,6 +16,11 @@ class BaseStock:
         self.client = None
         self.config = config
         self.back_menu_button = back_menu_button
+        self.open_counter=0
+        self.close_counter=0
+        self.deposit=0
+        self.is_running=False
+        self.session_pnl = 0
         self.animation = [
             "[■□□□□□□□□□]",
             "[■■□□□□□□□□]",

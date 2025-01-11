@@ -65,6 +65,8 @@ def create_main_menu_markup():
     #     "TECH SUPPORT 🧑‍💻", url = "t.me/@gordeevlabs"
     # )
     # markup.add(itembtn_str_)
+
+    
     itembtn_str__ = types.InlineKeyboardButton(
         "НОВОСТИ", url = "t.me/@tradestartegies700"
     )
@@ -75,14 +77,33 @@ def create_main_menu_markup():
     itembtn_str____ = types.InlineKeyboardButton(
         "БАГИ 🐞", url = "t.me/@vacuum_issues"
     )
+
+
     itembtn_str_____ = types.InlineKeyboardButton(
         "ACCELERATE x2 🐞", callback_data='accelerate'
-    )                                         
+    )  
+    itembtn_str______ = types.InlineKeyboardButton(
+        "DOWNGRADE x2 🐞", callback_data='downgrade'
+    )      
+
+
+    itembtn_str00 = types.InlineKeyboardButton(
+        "HFT", callback_data='HFT'
+    )
+    itembtn_str01 = types.InlineKeyboardButton(
+        "MFT", callback_data='MFT'
+    )
+    itembtn_str02 = types.InlineKeyboardButton(
+        "LFT", callback_data='LFT'
+    )      
+
+
     #markup.add(itembtn_str7,itembtn_str10)
-    markup.add(itembtn_str11, itembtn_str_____)
-    markup.add(itembtn_str0)
+    markup.add(itembtn_str11, itembtn_str_____, itembtn_str______)
+    markup.add(itembtn_str00,itembtn_str01,itembtn_str02)
+    #markup.add(itembtn_str0)
     markup.add(itembtn_str1, itembtn_str2)
-    markup.add(itembtn_str3)
+    #markup.add(itembtn_str3)
     # markup.add(itembtn_str5, itembtn_str6)
     # markup.add(itembtn_str8)
     markup.add(itembtn_str12, itembtn_str__)
