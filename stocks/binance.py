@@ -13,6 +13,7 @@ from .base import BaseStock
 class BinanceStock(BaseStock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.type = 'binance'
 
     def get_keys(self, message_id, prefix_text=""):
         text = "\n".join(["Enter keys in order:", "*API_KEY*", "*API_SECRET*"])
@@ -215,14 +216,17 @@ class BinanceStock(BaseStock):
                     usdt_trading_balance = self.config['size']*current_price
                     deposit = usdt_trading_balance if float(usdt_balance['balance']) >= usdt_trading_balance else 0
 
+                    pnl = self.calculate_24h_pnl()
+                    self.update_leaderboard(pnl)
+
                     status_message = (
                         f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
                         f"RSI: {round(current_rsi, 2)}\n"                        
                         f"Открытых сделок: {self.open_counter}\n"
                         f"Закрытых сделок: {self.close_counter}\n\n"
                         f"Deposit: {deposit}\n"
-                        f"PnL: {self.calculate_24h_pnl()}"
-                    )
+                        f"PnL: {pnl}"
+                    )   
 
                     reply_markup = message.reply_markup
                     # for row in reply_markup.keyboard:

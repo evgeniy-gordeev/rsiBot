@@ -13,6 +13,7 @@ from .base import BaseStock
 class BybitStock(BaseStock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.type = 'bybit'
 
     def get_keys(self, message_id, prefix_text=""):
         text = "\n".join(["Enter keys in order:", "*API_KEY*", "*API_SECRET*"])
@@ -228,10 +229,13 @@ class BybitStock(BaseStock):
                 pos = self.client.get_positions(
                     category="linear", symbol=self.config['coin'])['result']['list'][0]['unrealisedPnl']
                 if len(pos) > 0:
-                    pnl = float(pos)
+                    unrealised_pnl = float(pos)
                 else:
-                    pnl = 0
-                self.session_pnl += pnl
+                    unrealised_pnl = 0
+                # self.session_pnl += pnl
+
+                pnl = self.calculate_24h_pnl() + unrealised_pnl
+                self.update_leaderboard(pnl)
 
                 status_message = (
                     f"stock: {self.config['stock']}\n"
@@ -244,7 +248,7 @@ class BybitStock(BaseStock):
                     f"Открытых сделок: {self.open_counter}\n"
                     f"Закрытых сделок: {self.close_counter}\n\n"
                     f"Deposit: {self.deposit}\n"
-                    f"PnL: {round(self.session_pnl,4)}\n"
+                    f"PnL: {round(pnl, 4)}\n"
                     #f"24h PnL: {self.calculate_24h_pnl()}"
                 )
 
