@@ -16,6 +16,7 @@ class KucoinStock(BaseStock):
         self.client: Trade
         self.market: Market
         self.user: User
+        self.type = 'kucoin'
 
     def get_keys(self, message_id, prefix_text=""):
         text = "\n".join(
@@ -216,14 +217,17 @@ class KucoinStock(BaseStock):
                 current_price = self.market.get_current_mark_price(symbol=self.config["coin"])['value']
                 usdt_balance = self.user.get_account_overview(currency='USDT')['accountEquity']
                 deposit = self.config['size']*current_price * int(self.config['leverage'])
-                #deposit = usdt_trading_balance if float(usdt_balance) >= usdt_trading_balance else 0                
+                #deposit = usdt_trading_balance if float(usdt_balance) >= usdt_trading_balance else 0   
+                # 
+                pnl = self.calculate_24h_pnl()
+                self.update_leaderboard(pnl)             
                 status_message = (
                     f"`{datetime.now().strftime('%H:%M:%S  %d-%m-%Y')}`\n"
                     f"RSI: {round(current_rsi, 2)}\n"                        
                     f"Открытых сделок: {self.open_counter}\n"
                     f"Закрытых сделок: {self.close_counter}\n\n"
                     f"Deposit: {deposit}\n"
-                    f"PnL: {self.calculate_24h_pnl()}"
+                    f"PnL: {pnl}"
                 )
 
                 reply_markup = message.reply_markup

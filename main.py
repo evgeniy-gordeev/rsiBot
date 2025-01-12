@@ -1,5 +1,6 @@
 import os
 import datetime
+from collections import defaultdict
 
 import telebot
 from telebot import types
@@ -21,8 +22,10 @@ import pprint
 
 
 load_dotenv()
+os.environ['SQL_USER'] = 'cloud_user'
 
 engine = create_engine(f"postgresql+psycopg2://{os.environ['SQL_USER']}:{os.environ['SQL_PASS']}@{os.environ['SQL_HOST']}/{os.environ['SQL_DATABASE']}")
+print(f"postgresql+psycopg2://{os.environ['SQL_USER']}:{os.environ['SQL_PASS']}@{os.environ['SQL_HOST']}/{os.environ['SQL_DATABASE']}")
 # conn = engine.raw_connection()
 # cur = conn.cursor()
 
@@ -43,7 +46,8 @@ low_border = config_data.get("low_border")
 long_stop_border = config_data.get("long_stop_border")
 is_running = False
 time_sleep = 5
-client = None
+configs = defaultdict(lambda: config_data)
+clients = defaultdict(lambda: None)
 
 coin_mapping = {
     "ton": "TONUSDT",
@@ -52,25 +56,28 @@ coin_mapping = {
 }
 
 
-
 @bot.callback_query_handler(lambda query: query.data in ["HFT"])
 def handle_accel(query):
-    config_data['tf'] = 1
-    config_data['n_periods'] = 6
-    write_config(config_data)
+    user_id = query.from_user.id
+    configs[user_id]['tf'] = 1
+    configs[user_id]['n_periods'] = 6
+    # write_config(config_data)
+
 
 @bot.callback_query_handler(lambda query: query.data in ["MFT"])
 def handle_accel(query):
-    config_data['tf'] = 5
-    config_data['n_periods'] = 12
-    write_config(config_data)   
+    user_id = query.from_user.id
+    configs[user_id]['tf'] = 5
+    configs[user_id]['n_periods'] = 12
+    # write_config(config_data)   
+
 
 @bot.callback_query_handler(lambda query: query.data in ["LFT"])
 def handle_accel(query):
-    config_data['tf'] = 15
-    config_data['n_periods'] = 14
-    write_config(config_data)        
-
+    user_id = query.from_user.id
+    configs[user_id]['tf'] = 15
+    configs[user_id]['n_periods'] = 14
+    # write_config(config_data)        
 
 
 @bot.message_handler(commands=["start"])
@@ -112,10 +119,11 @@ def handle_start(message):
 
 @bot.callback_query_handler(lambda query: query.data in ["back", "choose_stock"])
 def back_button_logic(query):
+    user_id = query.from_user.id
     text_to_print = "Выберите биржу"
     markup = create_stock_choose()
     bot.edit_message_text(
-        chat_id=query.from_user.id,
+        chat_id=user_id,
         text=text_to_print,
         message_id=query.message.id,
         reply_markup=markup,
@@ -124,13 +132,14 @@ def back_button_logic(query):
 
 @bot.callback_query_handler(lambda query: query.data in ["binance", "bybit", "kucoin"])
 def handle_start_trading_stock(query):
-    config_data['stock'] = query.data
+    user_id = query.from_user.id
+    configs[user_id]['stock'] = query.data
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("OK", callback_data="menu"))
     markup.add(types.InlineKeyboardButton("назад", callback_data="choose_stock"))
     bot.edit_message_text(
-        chat_id=query.from_user.id,
-        text=f"Выбранная биржа {config_data['stock']}",
+        chat_id=user_id,
+        text=f"Выбранная биржа {configs[user_id]['stock']}",
         message_id=query.message.id,
         reply_markup=markup,
     )
@@ -138,29 +147,31 @@ def handle_start_trading_stock(query):
 
 @bot.callback_query_handler(lambda query: query.data in ["init_client"])
 def handle_start_trading_stock(query):
-    global client
-    args = [bot, query.from_user.id, handle_start, config_data]
-    if config_data['stock'] == "binance":
-        if config_data['coin'][-1] == 'M':
-            config_data['coin'] = config_data['coin'][:-1]
-        client = BinanceStock(*args)
-    elif config_data['stock'] == "bybit":
-        if config_data['coin'][-1] == 'M':
-            config_data['coin'] = config_data['coin'][:-1]
-        client = BybitStock(*args)
+    global clients
+    user_id = query.from_user.id
+    args = [bot, user_id, handle_start, configs[user_id], engine]
+    if configs[user_id]['stock'] == "binance":
+        if configs[user_id]['coin'][-1] == 'M':
+            configs[user_id]['coin'] = configs[user_id]['coin'][:-1]
+        clients[user_id] = BinanceStock(*args)
+    elif configs[user_id]['stock'] == "bybit":
+        if configs[user_id]['coin'][-1] == 'M':
+            configs[user_id]['coin'] = configs[user_id]['coin'][:-1]
+        clients[user_id] = BybitStock(*args)
     else:
-        if config_data['coin'][-1] != 'M':
-            config_data['coin'] = config_data['coin'] + "M"
-        client = KucoinStock(*args)
-    client.get_keys(query.message.id)
+        if configs[user_id]['coin'][-1] != 'M':
+            configs[user_id]['coin'] = configs[user_id]['coin'] + "M"
+        clients[user_id] = KucoinStock(*args)
+    clients[user_id].get_keys(query.message.id)
 
 
 @bot.callback_query_handler(lambda query: query.data in ["menu"])
 def handle_menu(query):
     markup = create_main_menu_markup()
+    user_id = query.from_user.id
     response = "Главное меню"
     bot.edit_message_text(
-        chat_id=query.from_user.id,
+        chat_id=user_id,
         text=response,
         message_id=query.message.id,
         reply_markup=markup,
@@ -169,8 +180,9 @@ def handle_menu(query):
 
 @bot.callback_query_handler(lambda query: query.data in ["buy"])
 def handle_buy(query):
+    user_id = query.from_user.id
     bot.send_invoice(
-        chat_id=query.from_user.id, 
+        chat_id=user_id, 
         title='Поддержать проект', 
         description='Поддержать проект бота',
         invoice_payload='subs 1 month',
@@ -181,16 +193,18 @@ def handle_buy(query):
 
 @bot.callback_query_handler(lambda query: query.data in ["accelerate"])
 def handle_accel(query):
-    lev = int(config_data['leverage'])
-    config_data['leverage'] = lev*2
-    write_config(config_data)
+    user_id = query.from_user.id
+    lev = int(configs[user_id]['leverage'])
+    configs[user_id]['leverage'] = lev*2
+    # write_config(config_data)
 
 @bot.callback_query_handler(lambda query: query.data in ["downgrade"])
 def handle_accel(query):
-    lev = int(config_data['leverage'])
+    user_id = query.from_user.id
+    lev = int(configs[user_id]['leverage'])
     new_lev = int(lev/2) if lev > 1 else 1
-    config_data['leverage'] = new_lev
-    write_config(config_data)    
+    configs[user_id]['leverage'] = new_lev
+    # write_config(config_data)    
 
 
 @bot.pre_checkout_query_handler(func=lambda query: True)
@@ -271,7 +285,7 @@ def handle_subscription_status(query):
     markup.add(itembtn_str)
 
     bot.edit_message_text(
-        chat_id=query.from_user.id,
+        chat_id=user_id,
         text=response,
         message_id=query.message.id,
         reply_markup=markup,
@@ -292,13 +306,12 @@ def is_active_user(user_id):
     return not df.empty
 
 
-
-
 # Обработчик нажатия кнопки "Запуск🚀🚀🚀"
 @bot.message_handler(func=lambda message: message.text == "Запуск🚀🚀🚀")
 def handle_start_trading(message):
-    if client:
-        client.start_trading_process(message.chat.id, message)
+    user_id = message.from_user.id
+    if clients[user_id]:
+        clients[user_id].start_trading_process(message.chat.id, message)
     else:
         markup = main_menu_button()
         bot.edit_message_text("Не указан клиент 🚫", message.chat.id, message.id, reply_markup=markup)
@@ -307,18 +320,20 @@ def handle_start_trading(message):
 # Обработчик нажатия кнопки "start"
 @bot.callback_query_handler(lambda query: query.data == "start")
 def handle_start_callback(query):
-    if client:
-        client.start_trading_process(query.from_user.id, query.message)
+    user_id = query.from_user.id
+    if clients[user_id]:
+        clients[user_id].start_trading_process(user_id, query.message)
     else:
         markup = main_menu_button()
-        bot.edit_message_text("Не указан клиент 🚫", query.from_user.id, query.message.id, reply_markup=markup)
+        bot.edit_message_text("Не указан клиент 🚫", user_id, query.message.id, reply_markup=markup)
 
 
 # Обработчик нажатия кнопки "STOP❌❌❌"
 @bot.message_handler(func=lambda message: message.text == "STOP❌❌❌")
 def handle_stop(message):
-    if client:
-        client.stop_trading_process(message.chat.id, message)
+    user_id = message.from_user.id
+    if clients[user_id]:
+        clients[user_id].stop_trading_process(message.chat.id, message)
     else:
         markup = main_menu_button()
         bot.edit_message_text("Не указан клиент 🚫", message.chat.id, message.id, reply_markup=markup)
@@ -327,15 +342,17 @@ def handle_stop(message):
 # Обработчик нажатия кнопки "stop"
 @bot.callback_query_handler(lambda query: query.data == "stop")
 def handle_stop_callback(query):
-    if client:
-        client.stop_trading_process(query.from_user.id, query.message)
+    user_id = query.from_user.id
+    if clients[user_id]:
+        clients[user_id].stop_trading_process(user_id, query.message)
     else:
         markup = main_menu_button()
-        bot.edit_message_text("Не указан клиент 🚫", query.from_user.id, query.message.id, reply_markup=markup)
+        bot.edit_message_text("Не указан клиент 🚫", user_id, query.message.id, reply_markup=markup)
 
 
 @bot.callback_query_handler(lambda query: query.data in ["choose_pair"])
 def back_button_logic2(query):
+    user_id = query.from_user.id
     text_to_print = "Выберите пару"
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("TON", callback_data="ton"))
@@ -343,7 +360,7 @@ def back_button_logic2(query):
     markup.add(types.InlineKeyboardButton("BTC", callback_data="btc"))
     markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
     bot.edit_message_text(
-        chat_id=query.from_user.id,
+        chat_id=user_id,
         text=text_to_print,
         message_id=query.message.id,
         reply_markup=markup,
@@ -351,19 +368,48 @@ def back_button_logic2(query):
 
 @bot.callback_query_handler(lambda query: query.data in ["ton", "sol", "btc"])
 def handle_start_trading(query):
+    user_id = query.from_user.id
     coin = coin_mapping[query.data]
-    config_data['coin'] = coin
-    if client:
-        client.config = config_data
+    configs[user_id]['coin'] = coin
+    if clients[user_id]:
+        clients[user_id].config = configs[user_id]
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("OK", callback_data="menu"))
     markup.add(types.InlineKeyboardButton("назад", callback_data="choose_pair"))
     bot.edit_message_text(
-        chat_id=query.from_user.id,
+        chat_id=user_id,
         text=f"Выбранная монета {coin}",
         message_id=query.message.id,
         reply_markup=markup,
     )
+
+
+@bot.callback_query_handler(lambda query: query.data in ["leaderboard"])
+def handle_leaderboard(query):
+    user_id = query.from_user.id
+    sql_query = f"""
+        SELECT subs_id,
+               pnl, 
+               dense_rank() over (order by pnl DESC) as rank_num
+          FROM leaderboard 
+         WHERE stock_type = '{clients[user_id].type}'
+               and date_pnl > '{datetime.datetime.now() - datetime.timedelta(hours=24)}'
+    """
+    with engine.begin() as conn:
+        df = pd.read_sql_query(sql_query, conn)
+
+    leadeboard_text = df.head(5).to_markdown(index=False)
+    leadeboard_text = f'`{leadeboard_text}`'
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("Назад", callback_data="menu"))
+    bot.edit_message_text(
+        chat_id=query.from_user.id,
+        text=f"Лидерборд\n" + leadeboard_text,
+        message_id=query.message.id,
+        reply_markup=markup,
+        parse_mode="Markdown",
+    )
+
 
 
 
@@ -375,7 +421,7 @@ def handle_start_trading(query):
 #     markup.add(types.InlineKeyboardButton("Введите плечо", callback_data="enter_leverage"))
 #     markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
 #     bot.edit_message_text(
-#         chat_id=query.from_user.id,
+#         chat_id=user_id,
 #         text=text_to_print,
 #         message_id=query.message.id,
 #         reply_markup=markup,
@@ -385,12 +431,13 @@ def handle_start_trading(query):
 
 @bot.callback_query_handler(lambda query: query.data in ["back", "choose_size"])
 def handle_choose_size(query):
-    chat_id = query.from_user.id
+    user_id = query.from_user.id
+    chat_id = user_id
     message_id = query.message.id
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("назад", callback_data="menu"))
     msg = bot.edit_message_text(
-        chat_id=query.from_user.id,
+        chat_id=user_id,
         text="Введите деп",
         message_id=query.message.id,
         reply_markup=markup
@@ -399,10 +446,11 @@ def handle_choose_size(query):
 
 def change_value(msg, chat_id, message_id, query_data):
     bot.delete_message(msg.from_user.id, msg.message_id, timeout=1000)
-    config_data['size'] = int(msg.text)
-    if client:
-        client.config = config_data
-    text_to_print = f"Обновленное значение для поля size\nЗначение {config_data['size']}"
+    user_id = msg.from_user.id
+    configs[user_id]['size'] = int(msg.text)
+    if clients[user_id]:
+        clients[user_id].config = configs[user_id]
+    text_to_print = f"Обновленное значение для поля size\nЗначение {configs[user_id]['size']}"
     #text_to_print += '\nДля обновления значения еще раз нажмите кнопку "Назад" и выберете соответствующий параметр'
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("назад", callback_data="choose_size"))
@@ -414,125 +462,11 @@ def change_value(msg, chat_id, message_id, query_data):
     )
 
 
-@bot.callback_query_handler(lambda query: query.data == "set")
-def lessgo(query):
-    bot.clear_step_handler(query.message)
-    with open("config.json", "r") as file:
-        config_data = json.load(file)
-    markup = types.InlineKeyboardMarkup()
-    msg = "Введите новое значение для какого-либо поля в формате 'поле значение'\n\n"
-    msg += "Текущие поля\n"
-    for key, value in config_data.items():
-        msg += f"{key}: {value}\n"
-        markup.add(types.InlineKeyboardButton(key, callback_data=f"ch*{key}"))
-
-    itembtn_str1 = types.InlineKeyboardButton("назад", callback_data="menu")
-    markup.add(
-        itembtn_str1,
-    )
-    msg = bot.edit_message_text(
-        chat_id=query.from_user.id,
-        text=msg,
-        message_id=query.message.id,
-        reply_markup=markup,
-    )
-    # bot.register_next_step_handler(msg,test,msg)
-
-
-
-
-
-
-
-
-@bot.callback_query_handler(lambda query: query.data[:2] == "ch")
-def lessgo(query):
-    key = query.data.split("*")[1]
-    with open("config.json", "r") as file:
-        config_data = json.load(file)
-    markup = types.InlineKeyboardMarkup()
-    msg = f"Введите новое значение для поля {key}\n"
-    msg += f"Текущее значение {config_data[key]}"
-    itembtn_str1 = types.InlineKeyboardButton("назад", callback_data="set")
-    markup.add(
-        itembtn_str1,
-    )
-    msg = bot.edit_message_text(
-        chat_id=query.from_user.id,
-        text=msg,
-        message_id=query.message.id,
-        reply_markup=markup,
-    )
-    bot.register_next_step_handler(msg, test, msg, key)
-
-
-def test(message, old_msg, key):
-    markup = types.InlineKeyboardMarkup()
-    itembtn_str1 = types.InlineKeyboardButton("назад", callback_data="set")
-    markup.add(itembtn_str1)
-    field = key
-    bot.delete_message(chat_id=message.from_user.id, message_id=message.id)
-    value = message.text
-    # print(field,value)
-    config = read_config()
-    try:
-        if isinstance(config[field], int):
-            value = int(value)
-        elif isinstance(config[field], float):
-            value = float(value)
-    except ValueError:
-        print("gasdasz")
-        bot.edit_message_text(
-            chat_id=message.chat.id,
-            text="Некорректное значение для данного поля.",
-            message_id=old_msg.id,
-            reply_markup=markup,
-        )
-        return
-    print("gz")
-    config[field] = value
-    write_config(config)
-    bot.edit_message_text(
-        chat_id=message.chat.id,
-        text=f"Поле '{field}' успешно обновлено на '{value}'.",
-        message_id=old_msg.id,
-        reply_markup=markup,
-    )
-
-
-@bot.message_handler(commands=["set"])
-def set_config_value(message):
-    msg_parts = message.text.split()
-    if len(msg_parts) != 3:
-        bot.reply_to(message, "Используйте формат команды: /set <поле> <значение>")
-        return
-    field = msg_parts[1]
-    value = msg_parts[2]
-
-    config = read_config()
-    if field not in config:
-        bot.reply_to(message, f"Поле '{field}' не найдено в конфигурации.")
-        return
-
-    try:
-        if isinstance(config[field], int):
-            value = int(value)
-        elif isinstance(config[field], float):
-            value = float(value)
-    except ValueError:
-        bot.reply_to(message, "Некорректное значение для данного поля.")
-        return
-
-    config[field] = value
-    write_config(config)
-
-    bot.reply_to(message, f"Поле '{field}' успешно обновлено на '{value}'.")
-
-
 @bot.callback_query_handler(lambda query: query.data == "settings")
 def lessgo(query):
+    user_id = query.from_user.id
     response = ""
-    for key, value in config_data.items():
+    for key, value in configs[user_id].items():
         if key in ['stock', 'coin', 'leverage', 'size']:
             response += f"{key}: {value}\n"
 
@@ -542,51 +476,39 @@ def lessgo(query):
         itembtn_str1,
     )
     bot.edit_message_text(
-        chat_id=query.from_user.id,
+        chat_id=user_id,
         text=response,
         message_id=query.message.id,
         reply_markup=markup,
     )
 
 
-@bot.message_handler(commands=["setting"])
-def lessgo(message):
-    with open("config.json", "r") as file:
-        config_data = json.load(file)
-    print(config_data)
-    response = ""
-    for key, value in config_data.items():
-        response += f"{key}: {value}\n"
-
-    bot.send_message(message.chat.id, response)
-
-
-
-
 @bot.callback_query_handler(lambda query: query.data == "pos")
 def lessgo(query):
-    if client:
-        res = str(client.current_position())  # kucoin
+    user_id = query.from_user.id
+    if clients[user_id]:
+        res = str(clients[user_id].current_position())  # kucoin
         markup = types.InlineKeyboardMarkup()
         itembtn_str1 = types.InlineKeyboardButton("назад", callback_data="menu")
         markup.add(
             itembtn_str1,
         )
         bot.edit_message_text(
-            chat_id=query.from_user.id,
+            chat_id=user_id,
             text=res,
             message_id=query.message.id,
             reply_markup=markup,
         )
     else:
         markup = main_menu_button()
-        bot.edit_message_text("Не указан клиент 🚫", query.from_user.id, query.message.id, reply_markup=markup)
+        bot.edit_message_text("Не указан клиент 🚫", user_id, query.message.id, reply_markup=markup)
 
 
 @bot.message_handler(commands=["pos"])
 def lessgo(message):
-    if client:
-        res = client.current_position()
+    user_id = message.from_user.id
+    if clients[user_id]:
+        res = clients[user_id].current_position()
         bot.send_message(message.chat.id, f"{res}")
     else:
         markup = main_menu_button()
@@ -596,28 +518,30 @@ def lessgo(message):
 
 @bot.callback_query_handler(lambda query: query.data == "24h_pnl")
 def lessgo(query):
-    if client:
-        res = client.calculate_24h_pnl()
+    user_id = query.from_user.id
+    if clients[user_id]:
+        res = clients[user_id].calculate_24h_pnl()
         markup = types.InlineKeyboardMarkup()
         itembtn_str1 = types.InlineKeyboardButton("назад", callback_data="menu")
         markup.add(
             itembtn_str1,
         )
         bot.edit_message_text(
-            chat_id=query.from_user.id,
+            chat_id=user_id,
             text=f"{res} USDT",
             message_id=query.message.id,
             reply_markup=markup,
         )
     else:
         markup = main_menu_button()
-        bot.edit_message_text("Не указан клиент 🚫", query.from_user.id, query.message.id, reply_markup=markup)
+        bot.edit_message_text("Не указан клиент 🚫", user_id, query.message.id, reply_markup=markup)
 
 
 @bot.message_handler(commands=["24h_pnl"])
 def lessgo(message):
-    if client:
-        res = client.calculate_24h_pnl()
+    user_id = message.from_user.id
+    if clients[user_id]:
+        res = clients[user_id].calculate_24h_pnl()
         bot.send_message(message.chat.id, f"{res} USDT")
     else:
         markup = main_menu_button()

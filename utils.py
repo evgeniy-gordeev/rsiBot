@@ -95,7 +95,11 @@ def create_main_menu_markup():
     )
     itembtn_str02 = types.InlineKeyboardButton(
         "LFT", callback_data='LFT'
-    )      
+    )    
+
+    itembtn_leaderboard = types.InlineKeyboardButton(
+        "Leaderboard", callback_data='leaderboard'
+    )   
 
 
     #markup.add(itembtn_str7,itembtn_str10)
@@ -110,7 +114,8 @@ def create_main_menu_markup():
     #markup.add(itembtn_str_)
     #markup.add(itembtn_str__)
     markup.add(itembtn_str___, itembtn_str____)
-    #markup.add(itembtn_str____)      
+    #markup.add(itembtn_str____)    
+    markup.add(itembtn_leaderboard) 
     return markup
 
 
